@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Smart Fog Vision - AI Dehazing & Hazard Alert System</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        colors: {
+          primary: '#0ea5e9',
+          dark: '#0b1220',
+          panel: '#111a2e',
+          accent: '#38bdf8'
+        }
+      }
+    }
+  }
+</script>
+<link rel="stylesheet" href="style.css"/>
+<!-- TF.js + COCO-SSD (YOLO-compatible lightweight) -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
+<!-- ONNX Runtime Web for YOLO (optional) -->
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/ort.min.js"></script>
+</head>
+<body class="bg-[#070c1a] text-slate-100 min-h-screen flex flex-col selection:bg-sky-500/30">
+  <!-- Header -->
+  <header class="sticky top-0 z-50 backdrop-blur-xl bg-[#070c1a]/80 border-b border-slate-800">
+    <div class="max-w-[1600px] mx-auto px-4 md:px-6 py-3 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-400 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20">
+          <i class="fa-solid fa-eye-low-vision text-white text-lg"></i>
+        </div>
+        <div>
+          <h1 class="text-lg md:text-xl font-black tracking-tight leading-none">SMART FOG <span class="text-sky-400">VISION</span></h1>
+          <p class="text-[11px] tracking-[0.18em] text-slate-400 font-semibold">AI DEHAZING • YOLO DETECTION • HAZARD ALERTS</p>
+        </div>
+        <span class="hidden md:inline-flex ml-3 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> SYSTEM ONLINE</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="hidden lg:flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-full px-3 py-1.5">
+          <span class="text-xs text-slate-400">FOG</span><span id="headerFog" class="text-sm font-black text-amber-400">0%</span>
+          <span class="w-px h-4 bg-slate-700"></span>
+          <span class="text-xs text-slate-400">VIS</span><span id="headerVis" class="text-sm font-black text-emerald-400">HIGH</span>
+          <span class="w-px h-4 bg-slate-700"></span>
+          <span class="text-xs text-slate-400">FPS</span><span id="headerFps" class="text-sm font-black text-sky-400">0</span>
+        </div>
+        <button id="btnFullscreen" class="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 flex items-center justify-center"><i class="fa-solid fa-expand text-slate-400"></i></button>
+        <button id="btnHelp" class="hidden md:inline-flex px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-sm font-bold shadow-lg shadow-sky-500/20">How it works</button>
+      </div>
+    </div>
+    <!-- Metric strip mobile -->
+    <div class="lg:hidden grid grid-cols-3 divide-x divide-slate-800 border-t border-slate-800 bg-slate-900/50">
+      <div class="py-2 text-center"><div class="text-[10px] tracking-widest text-slate-500 font-bold">FOG DENSITY</div><div id="mFog" class="font-black text-amber-400">0%</div></div>
+      <div class="py-2 text-center"><div class="text-[10px] tracking-widest text-slate-500 font-bold">VISIBILITY</div><div id="mVis" class="font-black text-emerald-400">HIGH</div></div>
+      <div class="py-2 text-center"><div class="text-[10px] tracking-widest text-slate-500 font-bold">PERFORMANCE</div><div id="mFps" class="font-black text-sky-400">0 FPS</div></div>
+    </div>
+  </header>
+
+  <!-- Alert Banner -->
+  <div id="alertBanner" class="hidden">
+    <div class="max-w-[1600px] mx-auto px-4 md:px-6 py-2">
+      <div id="alertContent" class="rounded-xl px-4 py-3 flex items-center gap-3 font-bold text-sm animate-pulse"></div>
+    </div>
+  </div>
+
+  <main class="flex-1 max-w-[1600px] w-full mx-auto px-4 md:px-6 py-4 md:py-6 flex flex-col gap-4">
+    <!-- Controls Bar -->
+    <div class="bg-[#111a2e] border border-slate-800 rounded-2xl p-3 md:p-4 flex flex-wrap gap-3 items-center justify-between shadow-xl">
+      <div class="flex flex-wrap gap-2 items-center">
+        <button id="btnStart" class="px-5 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-black text-sm shadow-lg shadow-sky-500/20 flex items-center gap-2"><i class="fa-solid fa-video"></i> START CAMERA</button>
+        <button id="btnStop" class="hidden px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 font-bold text-sm flex items-center gap-2"><i class="fa-solid fa-stop"></i> STOP</button>
+        <label class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 font-bold text-sm cursor-pointer flex items-center gap-2"><i class="fa-regular fa-image"></i> IMAGE <input id="inputImage" type="file" accept="image/*" class="hidden"/></label>
+        <label class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 font-bold text-sm cursor-pointer flex items-center gap-2"><i class="fa-solid fa-film"></i> VIDEO <input id="inputVideo" type="file" accept="video/*" class="hidden"/></label>
+        <button id="btnSnapshot" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 font-bold text-sm flex items-center gap-2"><i class="fa-solid fa-camera"></i> SNAPSHOT</button>
+        <button id="btnRecord" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 font-bold text-sm flex items-center gap-2"><i class="fa-solid fa-circle-dot text-red-500"></i> REC</button>
+        <button id="btnDemoFog" class="px-4 py-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-300 font-bold text-sm flex items-center gap-2"><i class="fa-solid fa-smog"></i> DEMO FOG</button>
+      </div>
+      <div class="flex items-center gap-2">
+        <span id="modelStatus" class="px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs font-bold text-slate-400 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-slate-500"></span> Loading AI...</span>
+        <select id="modelSelect" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold">
+          <option value="coco">COCO-SSD (Fast)</option>
+          <option value="yolo">YOLOv8n (ONNX)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Main Video Grid -->
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+      <!-- RAW FEED -->
+      <div class="bg-[#111a2e] border border-slate-800 rounded-2xl overflow-hidden shadow-xl flex flex-col">
+        <div class="px-4 py-3 flex items-center justify-between border-b border-slate-800 bg-slate-900/50">
+          <div class="flex items-center gap-3">
+            <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+            <h2 class="font-black text-sm tracking-widest">RAW FOGGY FEED</h2>
+            <span id="rawResolution" class="hidden md:inline text-xs px-2 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-400">640×480</span>
+          </div>
+          <div class="flex items-center gap-2 text-xs">
+            <span class="px-2 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 font-bold">LIVE</span>
+            <span id="rawObjCount" class="px-2 py-1 rounded-full bg-slate-800 border border-slate-700 font-bold">0 OBJECTS</span>
+          </div>
+        </div>
+        <div class="relative bg-black aspect-video overflow-hidden group">
+          <video id="video" autoplay muted playsinline class="w-full h-full object-cover hidden"></video>
+          <canvas id="canvasRaw" class="w-full h-full object-cover"></canvas>
+          <canvas id="overlayRaw" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
+          <!-- Placeholder -->
+          <div id="placeholderRaw" class="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-gradient-to-br from-slate-900 to-slate-950 p-6 text-center">
+            <div class="w-20 h-20 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center"><i class="fa-solid fa-video-slash text-2xl text-slate-500"></i></div>
+            <div>
+              <p class="font-black">No Camera Feed</p>
+              <p class="text-sm text-slate-400 max-w-sm">Click <b class="text-white">START CAMERA</b> to enable real-time fog vision. Or upload an image/video to test dehazing.</p>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="document.getElementById('btnStart').click()" class="px-4 py-2 rounded-xl bg-sky-500 text-white font-bold text-sm">Enable Camera</button>
+              <button onclick="document.getElementById('inputImage').click()" class="px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 font-bold text-sm">Try Sample Image</button>
+            </div>
+          </div>
+          <div class="absolute bottom-3 left-3 right-3 flex justify-between items-end pointer-events-none">
+            <div class="bg-black/70 backdrop-blur px-3 py-2 rounded-xl border border-white/10 text-xs">
+              <div class="text-slate-400 text-[10px] tracking-widest font-bold">FOG DENSITY</div>
+              <div class="flex items-center gap-2"><div class="w-20 h-1.5 rounded-full bg-slate-700 overflow-hidden"><div id="fogBarRaw" class="h-full bg-amber-400 transition-all" style="width:0%"></div></div><span id="fogValueRaw" class="font-black text-amber-400">0%</span></div>
+            </div>
+            <div class="bg-black/70 backdrop-blur px-3 py-2 rounded-xl border border-white/10 text-xs text-right">
+              <div class="text-slate-400 text-[10px] tracking-widest font-bold">DETECTIONS</div>
+              <div id="rawDetList" class="font-bold text-white">—</div>
+            </div>
+          </div>
+        </div>
+        <div class="px-4 py-2 bg-slate-900/50 border-t border-slate-800 flex items-center justify-between text-xs">
+          <span class="text-slate-400">Source: <b id="sourceLabel" class="text-white">Idle</b></span>
+          <span class="flex items-center gap-1.5 text-slate-400"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Latency <b id="latencyRaw" class="text-white">— ms</b></span>
+        </div>
+      </div>
+
+      <!-- ENHANCED FEED -->
+      <div class="bg-[#111a2e] border border-slate-800 rounded-2xl overflow-hidden shadow-xl flex flex-col ring-1 ring-sky-500/10">
+        <div class="px-4 py-3 flex items-center justify-between border-b border-slate-800 bg-gradient-to-r from-sky-500/10 to-indigo-500/10">
+          <div class="flex items-center gap-3">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <h2 class="font-black text-sm tracking-widest">ENHANCED • DEHAZED + YOLO</h2>
+            <span class="hidden md:inline px-2 py-1 rounded-full bg-sky-500 text-white text-[11px] font-black">AI ENHANCED</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="enhancedFPS" class="px-2 py-1 rounded-full bg-slate-900 border border-slate-700 text-xs font-black">0 FPS</span>
+            <span id="enhancedCount" class="px-2 py-1 rounded-full bg-emerald-500 text-white text-xs font-black">0 TRACKED</span>
+          </div>
+        </div>
+        <div class="relative bg-black aspect-video overflow-hidden">
+          <canvas id="canvasEnhanced" class="w-full h-full object-cover"></canvas>
+          <canvas id="overlayEnhanced" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
+          <div id="placeholderEnhanced" class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-sky-950/30 to-indigo-950/30 backdrop-blur-[2px]">
+            <i class="fa-solid fa-wand-magic-sparkles text-3xl text-sky-400"></i>
+            <p class="font-black text-sky-200">Enhanced Output</p>
+            <p class="text-xs text-sky-300/70">Dehazed stream will appear here</p>
+          </div>
+          <!-- Distance HUD -->
+          <div class="absolute top-3 left-3 bg-black/75 backdrop-blur px-3 py-2 rounded-xl border border-white/10 text-xs min-w-[140px]">
+            <div class="text-[10px] tracking-widest text-slate-400 font-bold">NEAREST HAZARD</div>
+            <div id="nearestHazard" class="font-black text-white text-sm">—</div>
+            <div id="nearestDist" class="text-emerald-400 font-bold">— m</div>
+          </div>
+          <div class="absolute top-3 right-3 flex flex-col gap-2 items-end">
+            <div id="visibilityBadge" class="px-3 py-1.5 rounded-full bg-emerald-500 text-white text-xs font-black shadow-lg">VISIBILITY: HIGH</div>
+            <div id="trackingBadge" class="px-2.5 py-1 rounded-full bg-black/70 border border-white/10 text-xs font-bold">TRACKING: IDLE</div>
+          </div>
+          <div class="absolute bottom-3 left-3 right-3 flex gap-2">
+            <div class="flex-1 bg-black/70 backdrop-blur rounded-xl px-3 py-2 border border-white/10">
+              <div class="text-[10px] tracking-widest text-slate-400 font-bold">DEHAZING STRENGTH</div>
+              <div class="flex items-center gap-2"><div class="flex-1 h-1.5 rounded-full bg-slate-700 overflow-hidden"><div id="dehazeBar" class="h-full bg-sky-400" style="width:75%"></div></div><span id="dehazeValue" class="text-xs font-black text-sky-400">0.75</span></div>
+            </div>
+            <div class="bg-black/70 backdrop-blur rounded-xl px-3 py-2 border border-white/10 hidden md:block">
+              <div class="text-[10px] tracking-widest text-slate-400 font-bold">VOICE ALERT</div>
+              <div id="voiceStatus" class="text-xs font-black text-slate-300">Ready</div>
+            </div>
+          </div>
+        </div>
+        <div class="px-4 py-2 bg-slate-900/50 border-t border-slate-800 flex items-center justify-between text-xs">
+          <span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-sky-500"></span> DCP + Guided Filter + CLAHE <span id="dehazeMs" class="text-slate-400">— ms</span></span>
+          <span id="yoloLabel" class="font-bold text-slate-300">YOLO • 80 classes</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Processing Pipeline & Controls -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      <!-- Pipeline Controls -->
+      <div class="lg:col-span-8 bg-[#111a2e] border border-slate-800 rounded-2xl p-4 md:p-5 shadow-xl">
+        <h3 class="font-black text-sm tracking-widest flex items-center gap-2 mb-4"><i class="fa-solid fa-sliders text-sky-400"></i> PROCESSING PIPELINE</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Dehazing -->
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+            <div class="flex items-center justify-between mb-3">
+              <span class="font-black text-sm flex items-center gap-2"><span class="w-7 h-7 rounded-lg bg-sky-500 flex items-center justify-center"><i class="fa-solid fa-wind text-white text-xs"></i></span> Dehazing / Enhancement</span>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input id="toggleDehaze" type="checkbox" checked class="sr-only peer"/>
+                <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-500"></div>
+              </label>
+            </div>
+            <div class="space-y-3">
+              <div>
+                <div class="flex justify-between text-xs font-bold mb-1"><span class="text-slate-400">Strength (ω)</span><span id="strengthVal" class="text-sky-400">0.95</span></div>
+                <input id="strength" type="range" min="0" max="1" step="0.05" value="0.95" class="w-full accent-sky-500"/>
+              </div>
+              <div>
+                <div class="flex justify-between text-xs font-bold mb-1"><span class="text-slate-400">Contrast (CLAHE)</span><span id="claheVal" class="text-sky-400">1.20</span></div>
+                <input id="clahe" type="range" min="0.8" max="2" step="0.1" value="1.2" class="w-full accent-sky-500"/>
+              </div>
+              <div class="flex gap-2">
+                <label class="flex items-center gap-2 text-xs font-bold bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700 cursor-pointer"><input id="toggleCLAHE" type="checkbox" checked class="accent-sky-500"/> CLAHE</label>
+                <label class="flex items-center gap-2 text-xs font-bold bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700 cursor-pointer"><input id="toggleSharpen" type="checkbox" checked class="accent-sky-500"/> Sharpen</label>
+                <span id="t0Label" class="ml-auto text-xs text-slate-500">t₀=0.1</span>
+              </div>
+            </div>
+          </div>
+          <!-- Detection -->
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+            <div class="flex items-center justify-between mb-3">
+              <span class="font-black text-sm flex items-center gap-2"><span class="w-7 h-7 rounded-lg bg-violet-500 flex items-center justify-center"><i class="fa-solid fa-bullseye text-white text-xs"></i></span> YOLO Detection</span>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input id="toggleDetect" type="checkbox" checked class="sr-only peer"/>
+                <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-500"></div>
+              </label>
+            </div>
+            <div class="space-y-3">
+              <div>
+                <div class="flex justify-between text-xs font-bold mb-1"><span class="text-slate-400">Confidence Threshold</span><span id="confVal" class="text-violet-400">0.50</span></div>
+                <input id="conf" type="range" min="0.1" max="0.9" step="0.05" value="0.5" class="w-full accent-violet-500"/>
+              </div>
+              <div class="flex gap-2 flex-wrap">
+                <label class="flex items-center gap-2 text-xs font-bold bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700 cursor-pointer"><input id="toggleTrack" type="checkbox" checked class="accent-violet-500"/> Tracking</label>
+                <label class="flex items-center gap-2 text-xs font-bold bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700 cursor-pointer"><input id="toggleDistance" type="checkbox" checked class="accent-violet-500"/> Distance</label>
+                <label class="flex items-center gap-2 text-xs font-bold bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700 cursor-pointer"><input id="toggleAlerts" type="checkbox" checked class="accent-emerald-500"/> Alerts</label>
+              </div>
+              <div class="flex gap-2">
+                <button id="btnVoice" class="flex-1 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-black text-xs flex items-center justify-center gap-2"><i class="fa-solid fa-volume-high"></i> VOICE ON</button>
+                <button id="btnMute" class="px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 font-bold text-xs">Mute</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Fog Metrics -->
+        <div class="grid grid-cols-3 gap-3 mt-4">
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 text-center">
+            <div class="text-[10px] tracking-widest font-bold text-slate-500">DARK CHANNEL MEAN</div>
+            <div id="metricDark" class="font-black text-lg">0.00</div>
+            <div class="text-xs text-slate-500">fog indicator</div>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 text-center">
+            <div class="text-[10px] tracking-widest font-bold text-slate-500">CONTRAST LOSS</div>
+            <div id="metricContrast" class="font-black text-lg">0%</div>
+            <div class="text-xs text-slate-500">visibility drop</div>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 text-center">
+            <div class="text-[10px] tracking-widest font-bold text-slate-500">EST. VISIBILITY</div>
+            <div id="metricVis" class="font-black text-lg text-emerald-400">— m</div>
+            <div class="text-xs text-slate-500">meteorological</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Panel: Objects + Alerts Log -->
+      <div class="lg:col-span-4 flex flex-col gap-4">
+        <div class="bg-[#111a2e] border border-slate-800 rounded-2xl p-4 shadow-xl flex-1">
+          <h3 class="font-black text-sm tracking-widest flex items-center gap-2 mb-3"><i class="fa-solid fa-list-check text-emerald-400"></i> TRACKED OBJECTS <span id="objBadge" class="ml-auto bg-slate-800 border border-slate-700 px-2 py-1 rounded-full text-xs">0</span></h3>
+          <div id="objectList" class="space-y-2 max-h-[220px] overflow-auto pr-1 custom-scroll">
+            <div class="py-8 text-center text-slate-500 text-sm">No detections yet.<br><span class="text-xs">Start camera to see YOLO tracking</span></div>
+          </div>
+          <div class="mt-3 grid grid-cols-2 gap-2 text-xs">
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+              <div class="text-slate-500 font-bold text-[10px] tracking-widest">TOTAL DETECTED</div>
+              <div id="totalDet" class="font-black text-xl">0</div>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+              <div class="text-slate-500 font-bold text-[10px] tracking-widest">HAZARDS &lt;30m</div>
+              <div id="hazardCount" class="font-black text-xl text-red-400">0</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-[#111a2e] border border-slate-800 rounded-2xl p-4 shadow-xl">
+          <h3 class="font-black text-sm tracking-widest flex items-center gap-2 mb-3"><i class="fa-solid fa-triangle-exclamation text-amber-400"></i> ALERTS & EVENTS <button id="btnClearAlerts" class="ml-auto text-xs px-2 py-1 rounded-full bg-slate-800 border border-slate-700">Clear</button></h3>
+          <div id="alertLog" class="space-y-2 max-h-[180px] overflow-auto pr-1 text-xs">
+            <div class="text-slate-500 text-center py-4">System ready — awaiting hazards</div>
+          </div>
+          <div class="mt-3 flex items-center gap-2 text-xs">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span><span class="text-slate-400">Voice: <b id="voiceLabel" class="text-white">Enabled</b> • Visual: <b class="text-white">Active</b></span>
+            <span class="ml-auto px-2 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 font-bold" id="alertMode">AUTO</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- How it Works / Info -->
+    <div id="infoSection" class="bg-[#111a2e] border border-slate-800 rounded-2xl p-5 md:p-6 shadow-xl">
+      <h3 class="font-black tracking-widest text-sm mb-4 flex items-center gap-2"><i class="fa-solid fa-circle-info text-sky-400"></i> HOW SMART FOG VISION WORKS</h3>
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-4 text-sm">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+          <div class="w-8 h-8 rounded-lg bg-sky-500 flex items-center justify-center text-white font-black mb-2">1</div>
+          <div class="font-black">Capture</div><div class="text-slate-400 text-xs mt-1">Real-time webcam / uploaded image. Resized to 640px for inference. Handles CORS-safe canvas.</div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+          <div class="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center text-white font-black mb-2">2</div>
+          <div class="font-black">Fog Detect</div><div class="text-slate-400 text-xs mt-1">Dark Channel Prior + contrast variance → fog density %, visibility (m), atmospheric light.</div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+          <div class="w-8 h-8 rounded-lg bg-violet-500 flex items-center justify-center text-white font-black mb-2">3</div>
+          <div class="font-black">Dehaze</div><div class="text-slate-400 text-xs mt-1">DCP transmission map, guided-filter smoothing, scene recovery + CLAHE & unsharp mask.</div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+          <div class="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-white font-black mb-2">4</div>
+          <div class="font-black">Detect & Track</div><div class="text-slate-400 text-xs mt-1">YOLO (COCO-SSD / ONNX) for 80 classes → IOU tracker across frames → IDs & trajectories.</div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+          <div class="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center text-white font-black mb-2">5</div>
+          <div class="font-black">Alert</div><div class="text-slate-400 text-xs mt-1">Pinhole distance est. → hazard levels + bounding boxes + speech synthesis warnings.</div>
+        </div>
+      </div>
+      <div class="mt-4 flex flex-wrap gap-2 text-xs">
+        <span class="px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800">Stack: TF.js • ONNX Runtime • Web Speech API</span>
+        <span class="px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800">Runs 100% in browser — no server required</span>
+        <span class="px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800">Tested on Chrome / Edge desktop & mobile</span>
+      </div>
+    </div>
+  </main>
+
+  <footer class="border-t border-slate-800 py-4 text-center text-xs text-slate-500">
+    © 2026 Smart Fog Vision • Built for driver safety in foggy conditions • <a href="#" class="text-sky-400 hover:underline">GitHub</a> • All processing stays on-device
+  </footer>
+
+  <!-- Hidden file video element -->
+  <video id="fileVideo" loop muted playsinline class="hidden"></video>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
