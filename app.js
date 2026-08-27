@@ -73,6 +73,7 @@ const el = {
   headerFog: document.getElementById('headerFog'),
   headerVis: document.getElementById('headerVis'),
   headerFps: document.getElementById('headerFps'),
+  headerFpsTop: document.getElementById('headerFpsTop'),
   mFog: document.getElementById('mFog'),
   mVis: document.getElementById('mVis'),
   mFps: document.getElementById('mFps'),
@@ -477,6 +478,7 @@ async function loop(){
     fps = Math.round(frameCount * 1000 / (now - lastFpsUpdate));
     frameCount=0; lastFpsUpdate=now;
     el.headerFps.textContent=fps;
+    if(el.headerFpsTop) el.headerFpsTop.textContent=fps+' FPS';
     el.mFps.textContent=fps+' FPS';
     el.enhancedFPS.textContent=fps+' FPS';
     el.latencyRaw.textContent=(dehazeMs+detectMs).toFixed(0)+' ms';

@@ -1,11 +1,83 @@
+/* Premium UI — Smart Fog Vision v2 */
 * { scrollbar-width: thin; scrollbar-color: #334155 transparent; }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-thumb { background: #334155; border-radius: 999px; }
+::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #38bdf8, #6366f1); border-radius: 999px; }
 ::-webkit-scrollbar-track { background: transparent; }
 .custom-scroll::-webkit-scrollbar { width: 5px; }
-.range-thumb::-webkit-slider-thumb { appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #0ea5e9; cursor: pointer; }
+.custom-scroll::-webkit-scrollbar-thumb { background: #334155; }
+
+/* Range styling — premium track */
+input[type="range"] {
+  -webkit-appearance: none; appearance: none;
+  height: 8px; border-radius: 999px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.06);
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: linear-gradient(180deg, #ffffff, #e0f2fe);
+  border: 2px solid #0ea5e9;
+  box-shadow: 0 4px 14px rgba(14,165,233,0.45), 0 0 0 4px rgba(14,165,233,0.15);
+  cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.06); box-shadow: 0 6px 20px rgba(14,165,233,0.55), 0 0 0 6px rgba(14,165,233,0.18); }
+input[type="range"]::-moz-range-thumb {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: white; border: 2px solid #0ea5e9;
+  box-shadow: 0 4px 14px rgba(14,165,233,0.45);
+  cursor: pointer;
+}
+input[type="range"].accent-violet-500::-webkit-slider-thumb { border-color:#8b5cf6; box-shadow: 0 4px 14px rgba(139,92,246,0.45), 0 0 0 4px rgba(139,92,246,0.15); }
+
 canvas { image-rendering: auto; }
-.alert-danger { background: linear-gradient(90deg, #dc2626, #991b1b); border: 1px solid #f87171; color: white; }
-.alert-warn { background: linear-gradient(90deg, #d97706, #92400e); border: 1px solid #fbbf24; color: white; }
-.alert-info { background: linear-gradient(90deg, #0ea5e9, #1e40af); border: 1px solid #38bdf8; color: white; }
-.bbox { position: absolute; border: 2px solid; border-radius: 6px; pointer-events: none; }
+
+/* Alert banners — glass + gradient */
+.alert-danger {
+  background: linear-gradient(90deg, rgba(220,38,38,0.95), rgba(153,27,27,0.95));
+  border: 1px solid rgba(248,113,113,0.5);
+  color: white;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 16px 40px rgba(220,38,38,0.35), 0 0 0 1px rgba(255,255,255,0.08) inset;
+}
+.alert-warn {
+  background: linear-gradient(90deg, rgba(217,119,6,0.95), rgba(146,64,14,0.95));
+  border: 1px solid rgba(251,191,36,0.5);
+  color: white;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 16px 40px rgba(217,119,6,0.28), 0 0 0 1px rgba(255,255,255,0.08) inset;
+}
+.alert-info {
+  background: linear-gradient(90deg, rgba(14,165,233,0.95), rgba(30,64,175,0.95));
+  border: 1px solid rgba(56,189,248,0.5);
+  color: white;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 16px 40px rgba(14,165,233,0.28), 0 0 0 1px rgba(255,255,255,0.08) inset;
+}
+
+/* Shimmer overlay for premium cards */
+.shimmer { position: relative; overflow: hidden; }
+.shimmer::after {
+  content:""; position:absolute; inset:0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+  transform: translateX(-100%);
+  animation: shimmer 2.2s linear infinite;
+}
+
+/* Glow ring on hover */
+.glow-hover { transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease; }
+.glow-hover:hover { border-color: rgba(56,189,248,0.25); box-shadow: 0 16px 40px rgba(2,12,27,0.5), 0 0 0 1px rgba(56,189,248,0.12) inset; transform: translateY(-1px); }
+
+/* Smooth fade-in */
+@keyframes fadeIn { from { opacity:0; transform: translateY(6px);} to {opacity:1; transform: translateY(0);} }
+.fade-in { animation: fadeIn 0.45s ease both; }
+
+/* BBOX helper (unused but kept) */
+.bbox { position: absolute; border: 2px solid; border-radius: 8px; pointer-events: none; }
+
+/* Focus ring */
+select:focus, button:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(14,165,233,0.35); }
+
+/* Mono numbers */
+.font-mono { font-variant-numeric: tabular-nums; }
