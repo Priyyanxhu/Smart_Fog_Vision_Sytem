@@ -1,0 +1,33 @@
+{
+  "model": "mobilenet_v2",
+  "num_classes": 2,
+  "labels": [
+    "non-fog",
+    "fog"
+  ],
+  "image_size": 224,
+  "mean": [
+    0.485,
+    0.456,
+    0.406
+  ],
+  "std": [
+    0.229,
+    0.224,
+    0.225
+  ],
+  "best_val_acc": 1.0,
+  "best_val_f1": 1.0,
+  "train_time_min": 2060.3041213035585,
+  "epochs_trained": 6,
+  "dataset": {
+    "fog": 14675,
+    "non_fog": 14675,
+    "total": 29350
+  },
+  "splits": {
+    "train": 28270,
+    "val": 40,
+    "test": 1040
+  }
+}

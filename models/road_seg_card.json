@@ -1,0 +1,17 @@
+{
+  "model_name": "TinyUNet Road Segmenter (BDD100K)",
+  "dataset": "BDD100K semantic seg (D:\\RoadDetector\\bdd100k_seg) \u2014 road id 0 -> binary",
+  "input_size": 256,
+  "params": 482737,
+  "val_iou": 0.7152734365323273,
+  "val_dice": 0.83400514611636,
+  "val_acc": 0.9204944864908854,
+  "val_precision": 0.824887836139723,
+  "val_recall": 0.8433262519854547,
+  "train_samples": 700,
+  "val_samples": 150,
+  "epochs": 8,
+  "train_time_min": 17.79,
+  "onnx_size_mb": 1.85,
+  "preprocess": "RGB resize 256, /255, no mean/std. Sigmoid(logits) > 0.5 = road."
+}

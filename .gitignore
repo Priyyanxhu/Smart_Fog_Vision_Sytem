@@ -1,0 +1,19 @@
+# Python / training artifacts
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.pt
+*.pth
+
+# Large / backup training outputs (not needed for browser deploy)
+models/yolo_runs/
+models/foggyroad_backup/
+models/pre_frida_backup/
+models/bdd100k_seg_attr_cache.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+*.log

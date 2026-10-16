@@ -1,0 +1,10 @@
+{
+  "labels": [
+    "non-fog",
+    "fog"
+  ],
+  "indices": {
+    "non-fog": 0,
+    "fog": 1
+  }
+}

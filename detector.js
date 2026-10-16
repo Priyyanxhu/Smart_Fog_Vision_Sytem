@@ -6,20 +6,57 @@ let yoloInputSize = 640;
 // COCO class names for mapping if we later use ONNX
 const YOLO_CLASSES = ['person','bicycle','car','motorcycle','airplane','bus','train','truck','boat','traffic light','fire hydrant','stop sign','parking meter','bench','bird','cat','dog','horse','sheep','cow','elephant','bear','zebra','giraffe','backpack','umbrella','handbag','tie','suitcase','frisbee','skis','snowboard','sports ball','kite','baseball bat','baseball glove','skateboard','surfboard','tennis racket','bottle','wine glass','cup','fork','knife','spoon','bowl','banana','apple','sandwich','orange','broccoli','carrot','hot dog','pizza','donut','cake','chair','couch','potted plant','bed','dining table','toilet','tv','laptop','mouse','remote','keyboard','cell phone','microwave','oven','toaster','sink','refrigerator','book','clock','vase','scissors','teddy bear','hair drier','toothbrush'];
 
+let currentYoloClasses = YOLO_CLASSES;
+let yoloModelUrl = null;
+
 export async function loadCoco() {
   if (cocoModel) return cocoModel;
   cocoModel = await cocoSsd.load({ base: 'lite_mobilenet_v2' });
   return cocoModel;
 }
 
-export async function loadYolo(modelUrl) {
-  if (yoloSession) return yoloSession;
+export async function loadYolo(modelUrl='models/road_detector.onnx') {
+  if (yoloSession && yoloModelUrl === modelUrl) return yoloSession;
   try {
-    yoloSession = await ort.InferenceSession.create(modelUrl, { executionProviders: ['wasm'] });
+    // Configure WASM paths
+    try {
+      if (window.ort && ort.env && ort.env.wasm) {
+        ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/";
+        ort.env.wasm.numThreads = 1;
+        ort.env.wasm.simd = true;
+      }
+    } catch {}
+
+    // Load custom class labels if road detector model
+    if (modelUrl.includes('road_detector') || !modelUrl.includes('assets@main')) {
+      try {
+        const cr = await fetch('models/road_classes.json');
+        if (cr.ok) {
+          const cjson = await cr.json();
+          if (Array.isArray(cjson) && cjson.length) {
+            currentYoloClasses = cjson;
+            console.log('[Detector] Loaded BDD100K road classes:', currentYoloClasses);
+          }
+        }
+      } catch (ce) {
+        console.warn('[Detector] Class load fallback:', ce);
+        currentYoloClasses = YOLO_CLASSES;
+      }
+    } else {
+      currentYoloClasses = YOLO_CLASSES;
+    }
+
+    yoloSession = await ort.InferenceSession.create(modelUrl, {
+      executionProviders: ['wasm'],
+      graphOptimizationLevel: 'all'
+    });
+    yoloModelUrl = modelUrl;
+    console.log('[Detector] YOLO session ready:', modelUrl, 'classes:', currentYoloClasses.length);
     return yoloSession;
   } catch (e) {
     console.warn('YOLO load failed', e);
     yoloSession = null;
+    yoloModelUrl = null;
     throw e;
   }
 }
@@ -131,7 +168,8 @@ export async function detectYolo(canvas, confTh=0.5){
       const by = y0 - bh/2;
       // clamp
       if(bw<8 || bh<8) continue;
-      boxes.push({ bbox:[bx,by,bw,bh], class: YOLO_CLASSES[maxCls]||('cls'+maxCls), score: maxScore });
+      const clsName = (currentYoloClasses && currentYoloClasses[maxCls]) || YOLO_CLASSES[maxCls] || ('cls'+maxCls);
+      boxes.push({ bbox:[bx,by,bw,bh], class: clsName, score: maxScore });
     }
     return nms(boxes, 0.45);
   } catch(e){
@@ -142,3 +180,6 @@ export async function detectYolo(canvas, confTh=0.5){
 }
 
 export function getYoloStatus(){ return !!yoloSession; }
+export function getCurrentYoloClasses(){ return currentYoloClasses; }
+export function resetYoloSession(){ yoloSession = null; yoloModelUrl = null; }
+

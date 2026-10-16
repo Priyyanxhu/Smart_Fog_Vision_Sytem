@@ -3,6 +3,13 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="theme-color" content="#0c0a09"/>
+<meta name="color-scheme" content="dark"/>
+<meta name="description" content="Smart Fog Vision — on-device AI dehazing, YOLO detection, distance & tracking for foggy driving. 100% in-browser, private."/>
+<meta property="og:title" content="Smart Fog Vision — AI Dehazing & Hazard Intelligence"/>
+<meta property="og:description" content="Real-time fog removal, YOLO detection, tracking, distance & voice alerts. 100% on-device."/>
+<meta property="og:type" content="website"/>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%230ea5e9'/%3E%3Cstop offset='1' stop-color='%236366f1'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Ctext x='32' y='42' font-size='30' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='900'%3ES%3C/text%3E%3C/svg%3E"/>
 <title>Smart Fog Vision — AI Dehazing & Hazard Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,27 +21,10 @@
     theme: {
       extend: {
         fontFamily: { sans: ['Inter','ui-sans-serif','system-ui'], display: ['Space Grotesk','Inter'], mono: ['JetBrains Mono','monospace'] },
-        colors: {
-          ink: '#060a18',
-          panel: '#0f172e',
-          panel2: '#111d3a',
-          line: '#1e2a4a',
-          skyx: '#0ea5e9',
-          viax: '#6366f1',
-        },
-        boxShadow: {
-          'glow-sky': '0 10px 40px -10px rgba(14,165,233,0.55), 0 0 0 1px rgba(56,189,248,0.15) inset',
-          'card': '0 20px 60px -20px rgba(2,12,27,0.7)',
-        },
-        animation: {
-          'float': 'float 6s ease-in-out infinite',
-          'shimmer': 'shimmer 2.2s linear infinite',
-          'pulse-slow': 'pulse 2.6s cubic-bezier(0.4,0,0.6,1) infinite',
-        },
-        keyframes: {
-          float: { '0%,100%':{transform:'translateY(0px)'}, '50%':{transform:'translateY(-6px)'} },
-          shimmer: { '0%':{transform:'translateX(-100%)'}, '100%':{transform:'translateX(200%)'} },
-        }
+        colors: { ink: '#0c0a09', panel: '#1c1917', panel2: '#292524', line: '#44403c', skyx: '#f97316', viax: '#f59e0b' },
+        boxShadow: { 'glow-sky': '0 10px 30px -10px rgba(249,115,22,0.55), 0 0 0 1px rgba(251,146,60,0.20) inset', 'card': '0 20px 55px -20px rgba(0,0,0,0.85)' },
+        animation: { 'float': 'float 6s ease-in-out infinite', 'shimmer': 'shimmer 2.2s linear infinite', 'pulse-slow': 'pulse 2.6s cubic-bezier(0.4,0,0.6,1) infinite' },
+        keyframes: { float: { '0%,100%':{transform:'translateY(0px)'}, '50%':{transform:'translateY(-6px)'} }, shimmer: { '0%':{transform:'translateX(-100%)'}, '100%':{transform:'translateX(200%)'} } }
       }
     }
   }
@@ -44,47 +34,59 @@
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/ort.min.js"></script>
 </head>
-<body class="bg-ink text-slate-100 min-h-screen flex flex-col selection:bg-sky-500/30 overflow-x-hidden">
+<body class="bg-stone-950 text-stone-100 min-h-screen flex flex-col selection:bg-orange-500/40 overflow-x-hidden">
+  <a href="#videoGrid" class="skip-link">Skip to live feeds</a>
+  <noscript><div style="max-width:1600px;margin:0 auto;padding:12px 16px;font:700 13px Inter,sans-serif;color:#7f1d1d;background:#fee2e2;border-bottom:1px solid #ef4444">Smart Fog Vision needs JavaScript enabled for on-device AI processing.</div></noscript>
+  <!-- Top progress bar -->
+  <div class="topbar fixed top-0 inset-x-0 z-[60]"></div>
+
   <!-- Ambient background -->
-  <div class="fixed inset-0 -z-10 pointer-events-none">
-    <div class="absolute inset-0 bg-[#060a18]"></div>
-    <div class="absolute inset-0 opacity-[0.07]" style="background-image: linear-gradient(rgba(255,255,255,0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.12) 1px, transparent 1px); background-size: 32px 32px;"></div>
-    <div class="absolute -top-40 -right-40 w-[760px] h-[760px] rounded-full blur-[90px] opacity-30" style="background: radial-gradient(circle at center, rgba(14,165,233,0.9), rgba(99,102,241,0.55) 45%, transparent 70%);"></div>
-    <div class="absolute -bottom-60 -left-40 w-[820px] h-[820px] rounded-full blur-[100px] opacity-20" style="background: radial-gradient(circle at center, rgba(99,102,241,0.7), rgba(14,165,233,0.4) 45%, transparent 72%);"></div>
-    <div class="absolute top-[34%] left-1/2 -translate-x-1/2 w-[1200px] h-[420px] rounded-[999px] blur-[80px] opacity-[0.10]" style="background: linear-gradient(90deg, rgba(14,165,233,0.6), rgba(168,85,247,0.5), rgba(14,165,233,0.6));"></div>
+  <div class="fixed inset-0 -z-10 pointer-events-none overflow-hidden" aria-hidden="true">
+    <div class="absolute inset-0 bg-[#0c0a09]"></div>
+    <div class="absolute inset-0 opacity-[0.05]" style="background-image: linear-gradient(rgba(249,115,22,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(249,115,22,0.5) 1px, transparent 1px); background-size: 28px 28px;"></div>
+    <div class="orb absolute -top-40 -right-40 w-[760px] h-[760px] rounded-full blur-[90px] opacity-[0.28]" style="background: radial-gradient(circle at center, rgba(249,115,22,0.85), rgba(154,52,18,0.5) 45%, transparent 70%);"></div>
+    <div class="orb2 absolute -bottom-60 -left-40 w-[860px] h-[860px] rounded-full blur-[100px] opacity-[0.16]" style="background: radial-gradient(circle at center, rgba(245,158,11,0.55), rgba(124,45,18,0.4) 45%, transparent 72%);"></div>
+    <div class="absolute top-[32%] left-1/2 -translate-x-1/2 w-[1200px] h-[420px] rounded-[999px] blur-[80px] opacity-[0.10]" style="background: linear-gradient(90deg, rgba(249,115,22,0.5), rgba(245,158,11,0.4), rgba(249,115,22,0.5));"></div>
+    <!-- subtle vignette -->
+    <div class="absolute inset-0" style="background:radial-gradient(900px 500px at 50% 0%, transparent 60%, rgba(0,0,0,0.55) 100%);"></div>
   </div>
 
   <!-- Header -->
-  <header class="sticky top-0 z-50 border-b border-white/[0.07] bg-[#070b1e]/70 backdrop-blur-2xl">
-    <div class="absolute inset-0 pointer-events-none opacity-60" style="background: linear-gradient(90deg, transparent, rgba(56,189,248,0.07), transparent);"></div>
+  <header class="sticky top-0 z-50 border-b border-orange-500/20 bg-stone-950/85 backdrop-blur-2xl shadow-[0_10px_35px_-18px_rgba(249,115,22,0.35)]">
+    <div class="absolute inset-0 pointer-events-none opacity-60" style="background: linear-gradient(90deg, transparent, rgba(249,115,22,0.10), transparent);"></div>
+    <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-orange-400/60 to-transparent"></div>
     <div class="relative max-w-[1600px] mx-auto px-4 md:px-6 py-3.5 flex items-center justify-between gap-4">
-      <div class="flex items-center gap-3.5">
-        <div class="relative">
-          <div class="absolute inset-0 blur-xl opacity-60 bg-gradient-to-br from-sky-400 to-indigo-600 rounded-2xl"></div>
-          <div class="relative w-[46px] h-[46px] rounded-2xl bg-gradient-to-br from-sky-400 via-sky-500 to-indigo-600 flex items-center justify-center shadow-glow-sky border border-white/10">
+      <div class="flex items-center gap-3.5 min-w-0">
+        <div class="relative shrink-0">
+          <div class="absolute inset-0 blur-xl opacity-60 bg-gradient-to-br from-orange-400 to-stone-950 rounded-2xl"></div>
+          <div class="relative w-[46px] h-[46px] rounded-2xl bg-gradient-to-br from-orange-400 via-orange-500 to-stone-950 flex items-center justify-center shadow-glow-sky border border-white/10">
             <i class="fa-solid fa-eye-low-vision text-white text-[18px]"></i>
           </div>
-          <span class="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-400 border-2 border-[#070b1e] shadow-[0_0_10px_rgba(16,185,129,0.9)] animate-pulse"></span>
+          <span class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-[#070b1e] shadow-[0_0_12px_rgba(16,185,129,0.95)] flex items-center justify-center">
+            <span class="w-1.5 h-1.5 rounded-full bg-white animate-ping absolute"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-white relative"></span>
+          </span>
         </div>
-        <div>
-          <div class="flex items-baseline gap-2">
-            <h1 class="font-display text-[17px] md:text-[22px] font-bold tracking-[-0.03em] leading-none">SMART FOG <span class="bg-gradient-to-r from-sky-400 to-indigo-400 bg-clip-text text-transparent">VISION</span></h1>
-            <span class="hidden md:inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-white/[0.06] border border-white/[0.08] text-[10px] font-black tracking-widest text-sky-200">AI • YOLO • TRACK</span>
+        <div class="min-w-0">
+          <div class="flex items-baseline gap-2 flex-wrap">
+            <h1 class="font-display text-[17px] md:text-[22px] font-bold tracking-[-0.03em] leading-none whitespace-nowrap">SMART FOG <span class="bg-gradient-to-r from-orange-400 to-orange-500 bg-clip-text text-transparent">VISION</span></h1>
+            <span class="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.06] border border-white/[0.08] text-[10px] font-black tracking-widest text-orange-200 pill-shine">AI • YOLO • TRACK</span>
           </div>
           <p class="hidden md:block text-[11px] tracking-[0.18em] text-slate-400 font-semibold mt-0.5">AI DEHAZING • DISTANCE • VOICE ALERTS — ON-DEVICE</p>
-          <p class="md:hidden text-[10px] tracking-[0.16em] text-slate-400 font-bold">ON-DEVICE • PRIVACY-FIRST</p>
+          <p class="md:hidden text-[10.5px] tracking-[0.14em] text-slate-400 font-bold">ON-DEVICE • PRIVACY-FIRST</p>
         </div>
-        <span class="hidden xl:inline-flex ml-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-400/20 text-emerald-300 text-xs font-black items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.9)]"></span> SYSTEM ONLINE
-          <span class="w-px h-3 bg-emerald-400/20"></span>
+        <span class="hidden xl:inline-flex ml-2 pl-1 pr-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-400/20 text-emerald-300 text-xs font-black items-center gap-2.5 shadow-[0_8px_20px_rgba(16,185,129,0.12)]">
+          <span class="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[11px] shadow-[0_4px_12px_rgba(16,185,129,0.45)]"><i class="fa-solid fa-shield-halved"></i></span>
+          SYSTEM ONLINE
+          <span class="w-px h-4 bg-emerald-400/20"></span>
           <span class="text-emerald-400/70 font-mono text-[11px]" id="headerFpsTop">— FPS</span>
         </span>
       </div>
 
-      <div class="flex items-center gap-2">
-        <div class="hidden lg:flex items-center gap-2 bg-white/[0.05] backdrop-blur border border-white/[0.08] rounded-full px-2 py-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.3)]">
+      <div class="flex items-center gap-2 shrink-0">
+        <div class="hidden lg:flex items-center gap-2 glass rounded-full px-2 py-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.35)] pill-shine">
           <div class="flex items-center gap-2 pl-2 pr-3 py-1 rounded-full bg-amber-500/10 border border-amber-400/15">
-            <span class="w-7 h-7 rounded-full bg-amber-500 flex items-center justify-center text-white text-xs"><i class="fa-solid fa-smog"></i></span>
+            <span class="w-7 h-7 rounded-full bg-amber-500 flex items-center justify-center text-white text-xs shadow-[0_4px_12px_rgba(245,158,11,0.4)]"><i class="fa-solid fa-smog"></i></span>
             <div class="leading-none">
               <div class="text-[10px] tracking-widest font-black text-amber-200/70">FOG</div>
               <div id="headerFog" class="text-sm font-black text-amber-300 -mt-0.5">0%</div>
@@ -100,87 +102,110 @@
           </div>
           <span class="w-px h-8 bg-white/10 hidden xl:block"></span>
           <div class="hidden xl:flex items-center gap-2 pl-2 pr-3">
-            <span class="w-7 h-7 rounded-full bg-sky-500 flex items-center justify-center text-white text-xs"><i class="fa-solid fa-gauge-high"></i></span>
+            <span class="w-7 h-7 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs shadow-[0_4px_12px_rgba(249,115,22,0.4)]"><i class="fa-solid fa-gauge-high"></i></span>
             <div class="leading-none">
               <div class="text-[10px] tracking-widest font-black text-slate-400">PERF</div>
-              <div class="flex items-baseline gap-1"><span id="headerFps" class="text-sm font-black text-sky-300">0</span><span class="text-[11px] font-bold text-sky-300/70">FPS</span></div>
+              <div class="flex items-baseline gap-1"><span id="headerFps" class="text-sm font-black text-orange-300">0</span><span class="text-[11px] font-bold text-orange-300/70">FPS</span></div>
+            </div>
+          </div>
+          <span class="w-px h-8 bg-white/10 hidden xl:block"></span>
+          <div class="hidden xl:flex items-center gap-2 pl-2 pr-2">
+            <span class="w-7 h-7 rounded-full bg-gradient-to-br from-amber-500 to-stone-950 flex items-center justify-center text-white text-xs shadow-[0_4px_12px_rgba(139,92,246,0.4)]"><i class="fa-solid fa-brain"></i></span>
+            <div class="leading-none">
+              <div class="text-[10px] tracking-widest font-black text-slate-400">AI FOG</div>
+              <div id="headerAiFog" class="text-sm font-black -mt-0.5" style="color:#a5b4fc">—</div>
             </div>
           </div>
         </div>
-        <button id="btnFullscreen" class="w-10 h-10 rounded-xl bg-white/[0.06] hover:bg-white/[0.10] border border-white/[0.08] backdrop-blur flex items-center justify-center transition">
-          <i class="fa-solid fa-expand text-slate-300"></i>
+        <button id="btnFullscreen" data-tooltip="Fullscreen" aria-label="Toggle fullscreen" class="w-10 h-10 rounded-xl glass hover:bg-white/[0.08] border border-white/[0.08] flex items-center justify-center">
+          <i class="fa-solid fa-expand text-slate-300 text-sm"></i>
         </button>
-        <button id="btnHelp" class="hidden md:inline-flex px-5 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-400 hover:to-indigo-400 text-white text-sm font-black shadow-[0_10px_30px_rgba(14,165,233,0.35)] border border-white/10 transition">
+        <button id="btnTheater" data-tooltip="Theater mode (T)" aria-label="Toggle theater mode" aria-pressed="false" class="w-10 h-10 rounded-xl glass hover:bg-white/[0.08] border border-white/[0.08] flex items-center justify-center">
+          <i class="fa-solid fa-clapperboard text-slate-300 text-sm"></i>
+        </button>
+        <button id="btnShortcuts" data-tooltip="Shortcuts (?)" aria-label="Show keyboard shortcuts" class="w-10 h-10 rounded-xl glass hover:bg-white/[0.08] border border-white/[0.08] hidden md:flex items-center justify-center">
+          <i class="fa-solid fa-keyboard text-slate-300 text-sm"></i>
+        </button>
+        <button id="btnHelp" class="hidden md:inline-flex px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-stone-900 hover:from-orange-400 hover:to-orange-500 text-white text-sm font-black shadow-[0_10px_30px_rgba(249,115,22,0.35)] border border-white/10 btn-shine">
           How it works
         </button>
       </div>
     </div>
 
-    <!-- Mobile metrics -->
-    <div class="lg:hidden grid grid-cols-3 divide-x divide-white/5 border-t border-white/5 bg-white/[0.02] backdrop-blur">
-      <div class="py-2.5 text-center">
-        <div class="text-[10px] tracking-[0.16em] text-slate-400 font-black">FOG DENSITY</div>
-        <div id="mFog" class="font-black text-amber-300">0%</div>
+    <!-- Mobile metrics – frosted cards -->
+    <div class="lg:hidden grid grid-cols-3 gap-2 px-3 pb-3">
+      <div class="rounded-2xl glass px-3 py-2.5 text-center card-lift">
+        <div class="text-[10px] tracking-[0.16em] text-slate-400 font-black flex items-center justify-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>FOG</div>
+        <div id="mFog" class="font-black text-amber-300 text-[15px]">0%</div>
       </div>
-      <div class="py-2.5 text-center">
-        <div class="text-[10px] tracking-[0.16em] text-slate-400 font-black">VISIBILITY</div>
-        <div id="mVis" class="font-black text-emerald-300">HIGH</div>
+      <div class="rounded-2xl glass px-3 py-2.5 text-center card-lift">
+        <div class="text-[10px] tracking-[0.16em] text-slate-400 font-black flex items-center justify-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>VISIBILITY</div>
+        <div id="mVis" class="font-black text-emerald-300 text-[15px]">HIGH</div>
       </div>
-      <div class="py-2.5 text-center">
-        <div class="text-[10px] tracking-[0.16em] text-slate-400 font-black">PERFORMANCE</div>
-        <div id="mFps" class="font-black text-sky-300">0 FPS</div>
+      <div class="rounded-2xl glass px-3 py-2.5 text-center card-lift">
+        <div class="text-[10px] tracking-[0.16em] text-slate-400 font-black">PERF</div>
+        <div id="mFps" class="font-black text-orange-300 text-[15px]">0 FPS</div>
       </div>
     </div>
   </header>
 
   <!-- Alert Banner -->
-  <div id="alertBanner" class="hidden">
+  <div id="alertBanner" class="hidden" role="alert" aria-live="assertive">
     <div class="max-w-[1600px] mx-auto px-4 md:px-6 py-3">
       <div id="alertContent" class="rounded-2xl px-4 py-3.5 flex items-center gap-3 font-bold text-sm shadow-xl border"></div>
     </div>
   </div>
 
   <main class="flex-1 max-w-[1600px] w-full mx-auto px-4 md:px-6 py-5 md:py-6 flex flex-col gap-5">
-    <!-- Controls Bar -->
-    <div class="relative overflow-hidden rounded-[20px] border border-white/[0.08] bg-white/[0.04] backdrop-blur-2xl shadow-card">
+    <!-- Controls Bar — grouped -->
+    <section aria-label="Input source and AI model controls" class="relative overflow-hidden rounded-[20px] glass shadow-card">
       <div class="absolute inset-0 pointer-events-none">
-        <div class="absolute inset-0 opacity-[0.06]" style="background-image: radial-gradient(rgba(255,255,255,0.8) 1px, transparent 1px); background-size: 18px 18px;"></div>
-        <div class="absolute -top-24 -right-24 w-72 h-72 rounded-full blur-3xl opacity-20" style="background: radial-gradient(circle, rgba(14,165,233,0.6), transparent 65%);"></div>
+        <div class="absolute inset-0 opacity-[0.035]" style="background-image: radial-gradient(rgba(255,255,255,0.85) 1px, transparent 1px); background-size: 18px 18px;"></div>
+        <div class="absolute -top-24 -right-24 w-72 h-72 rounded-full blur-3xl opacity-[0.14]" style="background: radial-gradient(circle, rgba(249,115,22,0.65), transparent 65%);"></div>
+        <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
       </div>
-      <div class="relative p-3 md:p-4 flex flex-wrap gap-3 items-center justify-between">
+      <div class="relative p-3 md:p-4 flex flex-wrap gap-3 items-center justify-between controls-scroll">
         <div class="flex flex-wrap gap-2.5 items-center">
-          <button id="btnStart" class="group relative overflow-hidden px-5 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-black text-sm shadow-[0_10px_30px_rgba(14,165,233,0.35)] border border-white/10 flex items-center gap-2.5 transition">
-            <span class="absolute inset-0 opacity-0 group-hover:opacity-100 transition" style="background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent); transform: skewX(-20deg);"></span>
-            <span class="w-7 h-7 rounded-lg bg-white/15 border border-white/15 flex items-center justify-center"><i class="fa-solid fa-video text-xs"></i></span>
-            <span class="relative">START CAMERA</span>
-            <i class="fa-solid fa-arrow-right text-xs opacity-70 group-hover:translate-x-0.5 transition"></i>
-          </button>
-          <button id="btnStop" class="hidden px-5 py-3 rounded-xl bg-white/[0.06] hover:bg-white/[0.10] border border-white/[0.08] backdrop-blur font-extrabold text-sm flex items-center gap-2 transition">
-            <i class="fa-solid fa-stop text-slate-300"></i> STOP
-          </button>
-          <label class="group px-4 py-3 rounded-xl bg-white/[0.06] hover:bg-white/[0.10] border border-white/[0.08] backdrop-blur font-extrabold text-sm cursor-pointer flex items-center gap-2.5 transition hover:-translate-y-[1px]">
-            <span class="w-7 h-7 rounded-lg bg-white/[0.08] border border-white/[0.08] flex items-center justify-center group-hover:bg-white/[0.12] transition"><i class="fa-regular fa-image text-sky-200"></i></span>
-            IMAGE <input id="inputImage" type="file" accept="image/*" class="hidden"/>
-          </label>
-          <label class="group px-4 py-3 rounded-xl bg-white/[0.06] hover:bg-white/[0.10] border border-white/[0.08] backdrop-blur font-extrabold text-sm cursor-pointer flex items-center gap-2.5 transition hover:-translate-y-[1px]">
-            <span class="w-7 h-7 rounded-lg bg-white/[0.08] border border-white/[0.08] flex items-center justify-center group-hover:bg-white/[0.12] transition"><i class="fa-solid fa-film text-violet-200"></i></span>
-            VIDEO <input id="inputVideo" type="file" accept="video/*" class="hidden"/>
-          </label>
-          <div class="hidden md:flex items-center gap-2 pl-2">
-            <span class="w-px h-8 bg-white/10"></span>
+          <div class="flex items-center gap-2">
+            <span class="hidden md:inline-flex text-[10px] tracking-[0.16em] font-black text-slate-500 mr-1">SOURCE</span>
+            <button id="btnStart" data-tooltip="Start camera (Space)" class="group relative overflow-hidden px-5 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-stone-950 hover:from-orange-400 hover:to-stone-900 text-white font-black text-sm shadow-[0_10px_30px_rgba(249,115,22,0.38)] border border-white/10 flex items-center gap-2.5 btn-shine">
+              <span class="w-7 h-7 rounded-lg bg-white/15 border border-white/15 flex items-center justify-center backdrop-blur"><i class="fa-solid fa-video text-xs"></i></span>
+              <span class="relative">START CAMERA</span>
+              <i class="fa-solid fa-arrow-right text-xs opacity-80 group-hover:translate-x-0.5 transition"></i>
+            </button>
+            <button id="btnStop" class="hidden px-5 py-3 rounded-xl glass hover:bg-white/[0.10] font-extrabold text-sm flex items-center gap-2">
+              <span class="w-7 h-7 rounded-lg bg-white/10 border border-white/10 flex items-center justify-center"><i class="fa-solid fa-stop text-slate-300 text-xs"></i></span> STOP
+            </button>
           </div>
-          <button id="btnSnapshot" class="px-4 py-3 rounded-xl bg-white/[0.06] hover:bg-white/[0.10] border border-white/[0.08] font-extrabold text-sm flex items-center gap-2 transition hover:-translate-y-[1px]"><span class="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-400/20 flex items-center justify-center"><i class="fa-solid fa-camera text-emerald-300 text-xs"></i></span> SNAPSHOT</button>
-          <button id="btnRecord" class="px-4 py-3 rounded-xl bg-white/[0.06] hover:bg-white/[0.10] border border-white/[0.08] font-extrabold text-sm flex items-center gap-2 transition hover:-translate-y-[1px]"><span class="w-7 h-7 rounded-lg bg-red-500/15 border border-red-400/20 flex items-center justify-center"><i class="fa-solid fa-circle-dot text-red-400 text-xs"></i></span> REC</button>
-          <button id="btnDemoFog" class="px-4 py-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/15 border border-amber-400/20 text-amber-200 font-extrabold text-sm flex items-center gap-2 transition hover:-translate-y-[1px]"><i class="fa-solid fa-smog"></i> DEMO FOG</button>
+          <span class="hidden md:block w-px h-8 bg-white/10 mx-1"></span>
+          <div class="flex items-center gap-2">
+            <span class="hidden md:inline-flex text-[10px] tracking-[0.16em] font-black text-slate-500 mr-1">UPLOAD</span>
+            <label class="group px-4 py-3 rounded-xl glass hover:bg-white/[0.08] font-extrabold text-sm cursor-pointer flex items-center gap-2.5 card-lift">
+              <span class="w-7 h-7 rounded-lg bg-white/[0.08] border border-white/[0.08] flex items-center justify-center group-hover:bg-white/[0.12] transition"><i class="fa-regular fa-image text-orange-200 text-xs"></i></span>
+              IMAGE <input id="inputImage" type="file" accept="image/*" class="hidden"/>
+            </label>
+            <label class="group px-4 py-3 rounded-xl glass hover:bg-white/[0.08] font-extrabold text-sm cursor-pointer flex items-center gap-2.5 card-lift">
+              <span class="w-7 h-7 rounded-lg bg-white/[0.08] border border-white/[0.08] flex items-center justify-center group-hover:bg-white/[0.12] transition"><i class="fa-solid fa-film text-amber-200 text-xs"></i></span>
+              VIDEO <input id="inputVideo" type="file" accept="video/*" class="hidden"/>
+            </label>
+          </div>
+          <span class="hidden md:block w-px h-8 bg-white/10 mx-1"></span>
+          <div class="flex items-center gap-2">
+            <span class="hidden lg:inline-flex text-[10px] tracking-[0.16em] font-black text-slate-500 mr-1">CAPTURE</span>
+            <button id="btnSnapshot" data-tooltip="Save PNG" class="px-4 py-3 rounded-xl glass hover:bg-white/[0.08] font-extrabold text-sm flex items-center gap-2 card-lift"><span class="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-400/20 flex items-center justify-center"><i class="fa-solid fa-camera text-emerald-300 text-xs"></i></span> SNAPSHOT</button>
+            <button id="btnRecord" data-tooltip="Record WebM" class="px-4 py-3 rounded-xl glass hover:bg-white/[0.08] font-extrabold text-sm flex items-center gap-2 card-lift"><span class="w-7 h-7 rounded-lg bg-red-500/15 border border-red-400/20 flex items-center justify-center"><i class="fa-solid fa-circle-dot text-red-400 text-xs"></i></span> REC</button>
+            <button id="btnDemoFog" class="px-4 py-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/15 border border-amber-400/20 text-amber-200 font-extrabold text-sm flex items-center gap-2 card-lift"><i class="fa-solid fa-smog"></i> DEMO FOG</button>
+          </div>
         </div>
-        <div class="flex items-center gap-2.5">
-          <span id="modelStatus" class="px-3.5 py-2.5 rounded-full bg-[#0b132e] border border-white/[0.08] text-xs font-extrabold text-slate-300 flex items-center gap-2 shadow-inner">
+        <div class="flex items-center gap-2.5 w-full md:w-auto">
+          <span id="modelStatus" class="flex-1 md:flex-none justify-center px-3.5 py-2.5 rounded-full bg-[#0b132e] border border-white/[0.08] text-xs font-extrabold text-slate-300 flex items-center gap-2 shadow-inner">
             <span class="w-2 h-2 rounded-full bg-slate-500 animate-pulse"></span> Loading AI...
           </span>
-          <div class="relative">
-            <select id="modelSelect" class="appearance-none bg-[#0b132e] border border-white/[0.08] rounded-xl pl-3 pr-9 py-2.5 text-sm font-extrabold text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500/30">
-              <option value="coco">COCO-SSD • Fast</option>
-              <option value="yolo">YOLOv8n • ONNX</option>
+          <div class="relative shrink-0">
+            <select id="modelSelect" class="appearance-none bg-stone-900 border border-orange-500/25 rounded-xl pl-3 pr-9 py-2.5 text-sm font-extrabold text-stone-100 focus:outline-none shadow-sm">
+              <option value="road_yolo" selected>BDD100K Road Detector • YOLOv8 ONNX</option>
+              <option value="coco">COCO-SSD • Fast (MobileNetV2)</option>
+              <option value="yolo">YOLOv8n • COCO 80</option>
             </select>
             <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
           </div>
@@ -188,147 +213,158 @@
       </div>
       <div class="relative h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
       <div class="relative px-4 py-2.5 flex flex-wrap items-center gap-2 text-[11px]">
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-sky-500/10 border border-sky-400/15 text-sky-200 font-black tracking-widest"><i class="fa-solid fa-bolt text-sky-300"></i> DCP + GUIDED FILTER + CLAHE</span>
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-500/10 border border-orange-400/15 text-orange-200 font-black tracking-widest"><i class="fa-solid fa-bolt text-orange-300"></i> DCP + GUIDED FILTER + CLAHE</span>
         <span class="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.05] border border-white/[0.08] text-slate-300 font-bold"><i class="fa-solid fa-microchip"></i> 100% On-Device • No Upload</span>
-        <span class="ml-auto hidden md:flex items-center gap-2 text-slate-400 font-semibold"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Tip: Press <kbd class="px-1.5 py-0.5 rounded bg-white/10 border border-white/10 font-mono text-[11px] text-white">Space</kbd> to start • <kbd class="px-1.5 py-0.5 rounded bg-white/10 border border-white/10 font-mono text-[11px] text-white">F</kbd> fog</span>
+        <span class="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-400/15 text-emerald-200 font-bold"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Privacy-first • WASM</span>
+        <span class="hidden xl:inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/[0.05] border border-white/[0.08] font-bold text-slate-300" aria-label="Hazard distance legend">
+          <span class="legend-dot" style="--dot:#ef4444"></span>DANGER&lt;12m
+          <span class="legend-dot" style="--dot:#f59e0b"></span>WARN&lt;25m
+          <span class="legend-dot" style="--dot:#eab308"></span>CAUTION&lt;45m
+          <span class="legend-dot" style="--dot:#22c55e"></span>SAFE
+        </span>
+        <span class="ml-auto hidden md:flex items-center gap-2 text-slate-400 font-semibold"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span> Tip: <kbd>Space</kbd> start • <kbd>F</kbd> fog • <kbd>T</kbd> theater • <kbd>?</kbd> keys</span>
       </div>
-    </div>
+    </section>
 
     <!-- Main Video Grid -->
-    <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
+    <section id="videoGrid" aria-label="Live camera feeds" class="grid grid-cols-1 xl:grid-cols-2 gap-5 scroll-mt-24">
       <!-- RAW FEED -->
-      <div class="group relative overflow-hidden rounded-[22px] border border-white/[0.08] bg-gradient-to-b from-white/[0.06] to-white/[0.02] backdrop-blur-2xl shadow-card flex flex-col hover:border-white/[0.12] transition">
-        <div class="absolute inset-0 pointer-events-none opacity-40 group-hover:opacity-60 transition">
-          <div class="absolute inset-0" style="background: radial-gradient(600px 200px at 20% 0%, rgba(56,189,248,0.10), transparent 60%), radial-gradient(500px 200px at 90% 0%, rgba(99,102,241,0.08), transparent 60%);"></div>
+      <article aria-label="Raw foggy feed" class="group relative overflow-hidden rounded-[22px] glass shadow-card flex flex-col card-lift">
+        <div class="absolute inset-0 pointer-events-none opacity-50 group-hover:opacity-70 transition">
+          <div class="absolute inset-0" style="background: radial-gradient(600px 220px at 20% 0%, rgba(56,189,248,0.09), transparent 60%), radial-gradient(500px 220px at 90% 0%, rgba(99,102,241,0.07), transparent 60%);"></div>
         </div>
-        <div class="relative px-4 py-3.5 flex items-center justify-between border-b border-white/[0.06] bg-white/[0.03]">
-          <div class="flex items-center gap-3">
-            <span class="relative flex h-2.5 w-2.5">
+        <div class="relative px-4 py-3.5 flex items-center justify-between border-b border-white/[0.06] bg-white/[0.03] backdrop-blur">
+          <div class="flex items-center gap-3 min-w-0">
+            <span class="relative flex h-2.5 w-2.5 shrink-0">
               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
               <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
             </span>
-            <h2 class="font-display font-bold text-[13px] tracking-[0.14em] text-white">RAW FOGGY FEED</h2>
-            <span id="rawResolution" class="hidden md:inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-white/[0.06] border border-white/[0.08] text-slate-300 font-mono">640×480</span>
+            <h2 class="font-display font-bold text-[13px] tracking-[0.14em] text-white whitespace-nowrap">RAW FOGGY FEED</h2>
+            <span id="rawResolution" class="hidden md:inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full glass text-slate-300 font-mono">640×480</span>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 shrink-0">
             <span class="px-2.5 py-1 rounded-full bg-red-500 text-white text-[11px] font-black tracking-widest border border-red-400/30 shadow-[0_6px_18px_rgba(239,68,68,0.35)]">LIVE</span>
             <span id="rawObjCount" class="px-2.5 py-1 rounded-full bg-[#0b132e] border border-white/[0.08] font-black text-xs text-slate-200">0 OBJECTS</span>
           </div>
         </div>
-        <div class="relative bg-[#030713] aspect-video overflow-hidden">
-          <video id="video" autoplay muted playsinline class="w-full h-full object-cover hidden"></video>
-          <canvas id="canvasRaw" class="w-full h-full object-cover"></canvas>
-          <canvas id="overlayRaw" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
+        <div class="relative bg-[#030713] aspect-video overflow-hidden corner-brackets">
+          <video id="video" autoplay muted playsinline class="w-full h-full object-cover hidden" aria-label="Webcam preview"></video>
+          <canvas id="canvasRaw" class="w-full h-full object-cover" role="img" aria-label="Raw camera frame"></canvas>
+          <canvas id="overlayRaw" class="absolute inset-0 w-full h-full pointer-events-none" aria-hidden="true"></canvas>
+          <div class="scanline"></div>
+          <span class="cb"></span>
           <!-- Placeholder -->
-          <div id="placeholderRaw" class="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center">
+          <div id="placeholderRaw" class="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center placeholder-card">
             <div class="absolute inset-0 bg-gradient-to-br from-slate-900 via-[#0b122e] to-black"></div>
-            <div class="absolute inset-0 opacity-[0.07]" style="background-image: linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px); background-size: 28px 28px;"></div>
-            <div class="relative w-20 h-20 rounded-[18px] bg-white/[0.06] border border-white/[0.08] backdrop-blur flex items-center justify-center shadow-[0_16px_40px_rgba(0,0,0,0.5)]">
+            <div class="absolute inset-0 opacity-[0.05]" style="background-image: linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px); background-size: 28px 28px;"></div>
+            <div class="relative w-20 h-20 rounded-[18px] glass flex items-center justify-center shadow-[0_16px_40px_rgba(0,0,0,0.55)] placeholder-icon">
               <i class="fa-solid fa-video-slash text-2xl text-slate-400"></i>
-              <span class="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-sky-500 border-2 border-[#0b122e] flex items-center justify-center text-white text-xs shadow-lg"><i class="fa-solid fa-plus"></i></span>
+              <span class="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-orange-500 border-2 border-[#0b122e] flex items-center justify-center text-white text-xs shadow-lg"><i class="fa-solid fa-plus"></i></span>
             </div>
             <div class="relative">
               <p class="font-display font-bold text-white tracking-tight">No Camera Feed</p>
               <p class="text-sm text-slate-400 max-w-sm mt-1 leading-relaxed">Click <b class="text-white font-black">START CAMERA</b> for real-time fog vision. Or upload an image/video to test dehazing.</p>
             </div>
-            <div class="relative flex gap-2">
-              <button onclick="document.getElementById('btnStart').click()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 text-white font-black text-sm shadow-[0_10px_24px_rgba(14,165,233,0.35)] border border-white/10">Enable Camera</button>
-              <button onclick="document.getElementById('inputImage').click()" class="px-4 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.10] backdrop-blur font-bold text-sm text-white">Try Sample Image</button>
+            <div class="relative flex gap-2 flex-wrap justify-center">
+              <button onclick="document.getElementById('btnStart').click()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-stone-950 text-white font-black text-sm shadow-[0_10px_24px_rgba(249,115,22,0.35)] border border-white/10 btn-shine">Enable Camera</button>
+              <button onclick="document.getElementById('inputImage').click()" class="px-4 py-2.5 rounded-xl glass font-bold text-sm text-white hover:bg-white/[0.08]">Try Sample Image</button>
             </div>
           </div>
           <!-- HUD -->
           <div class="absolute bottom-3 left-3 right-3 flex justify-between items-end gap-3 pointer-events-none">
-            <div class="flex-1 max-w-[220px] bg-[#060a1a]/75 backdrop-blur-xl px-3.5 py-2.5 rounded-2xl border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.4)]">
+            <div class="flex-1 max-w-[220px] hud px-3.5 py-2.5 rounded-2xl">
               <div class="text-white/60 text-[10px] tracking-[0.16em] font-black flex items-center gap-1.5"><i class="fa-solid fa-smog text-amber-300"></i> FOG DENSITY</div>
               <div class="flex items-center gap-2.5 mt-1"><div class="flex-1 h-2 rounded-full bg-white/10 overflow-hidden p-0.5"><div id="fogBarRaw" class="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all duration-500" style="width:0%"></div></div><span id="fogValueRaw" class="font-mono font-black text-amber-300 text-sm">0%</span></div>
             </div>
-            <div class="hidden sm:block bg-[#060a1a]/75 backdrop-blur-xl px-3.5 py-2.5 rounded-2xl border border-white/10 text-right shadow-[0_10px_30px_rgba(0,0,0,0.4)]">
+            <div class="hidden sm:block hud px-3.5 py-2.5 rounded-2xl text-right">
               <div class="text-white/60 text-[10px] tracking-[0.16em] font-black">DETECTIONS</div>
               <div id="rawDetList" class="font-bold text-white text-sm mt-0.5">—</div>
             </div>
           </div>
-          <!-- Top scanline -->
-          <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-400/50 to-transparent opacity-60"></div>
+          <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-orange-400/50 to-transparent opacity-60"></div>
         </div>
         <div class="relative px-4 py-2.5 bg-white/[0.02] border-t border-white/[0.06] flex items-center justify-between text-xs">
-          <span class="text-slate-400 font-semibold flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-sky-400 animate-pulse"></span> Source: <b id="sourceLabel" class="text-white font-black">Idle</b></span>
-          <span class="flex items-center gap-1.5 text-slate-400 font-semibold">Latency <b id="latencyRaw" class="text-white font-mono">— ms</b></span>
+          <span class="text-slate-400 font-semibold flex items-center gap-2 min-w-0"><span class="w-2 h-2 rounded-full bg-orange-400 animate-pulse shadow-[0_0_8px_rgba(56,189,248,0.8)] shrink-0"></span> <span class="truncate">Source: <b id="sourceLabel" class="text-white font-black">Idle</b></span></span>
+          <span class="flex items-center gap-1.5 text-slate-400 font-semibold shrink-0">Latency <b id="latencyRaw" class="text-white font-mono">— ms</b></span>
         </div>
-      </div>
+      </article>
 
       <!-- ENHANCED FEED -->
-      <div class="group relative overflow-hidden rounded-[22px] border border-sky-400/20 bg-gradient-to-b from-sky-500/[0.08] via-white/[0.04] to-white/[0.02] backdrop-blur-2xl shadow-[0_24px_70px_-20px_rgba(14,165,233,0.45)] flex flex-col hover:border-sky-400/30 transition">
+      <article aria-label="Enhanced dehazed feed" class="group relative overflow-hidden rounded-[22px] border border-orange-400/20 bg-gradient-to-b from-orange-500/[0.08] via-white/[0.04] to-white/[0.02] backdrop-blur-2xl shadow-[0_24px_70px_-20px_rgba(249,115,22,0.45)] flex flex-col card-lift">
         <div class="absolute inset-0 pointer-events-none">
-          <div class="absolute -top-28 -right-28 w-72 h-72 rounded-full blur-3xl opacity-25" style="background: radial-gradient(circle, rgba(14,165,233,0.7), transparent 70%);"></div>
-          <div class="absolute -bottom-28 -left-28 w-72 h-72 rounded-full blur-3xl opacity-20" style="background: radial-gradient(circle, rgba(99,102,241,0.6), transparent 70%);"></div>
+          <div class="absolute -top-28 -right-28 w-72 h-72 rounded-full blur-3xl opacity-25" style="background: radial-gradient(circle, rgba(249,115,22,0.70), transparent 70%);"></div>
+          <div class="absolute -bottom-28 -left-28 w-72 h-72 rounded-full blur-3xl opacity-20" style="background: radial-gradient(circle, rgba(99,102,241,0.60), transparent 70%);"></div>
         </div>
-        <div class="relative px-4 py-3.5 flex items-center justify-between border-b border-white/[0.06] bg-gradient-to-r from-sky-500/10 via-indigo-500/10 to-transparent">
-          <div class="flex items-center gap-3">
-            <span class="relative flex h-2.5 w-2.5">
+        <div class="relative px-4 py-3.5 flex items-center justify-between border-b border-white/[0.06] bg-gradient-to-r from-orange-500/10 via-stone-900/10 to-transparent">
+          <div class="flex items-center gap-3 min-w-0">
+            <span class="relative flex h-2.5 w-2.5 shrink-0">
               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
             </span>
             <h2 class="font-display font-bold text-[13px] tracking-[0.14em] text-white">ENHANCED • DEHAZED + YOLO</h2>
-            <span class="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-sky-500 to-indigo-500 text-white text-[11px] font-black tracking-widest border border-white/10 shadow-[0_6px_18px_rgba(14,165,233,0.35)]"><i class="fa-solid fa-wand-magic-sparkles text-[11px]"></i> AI ENHANCED</span>
+            <span class="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-orange-500 to-stone-900 text-white text-[11px] font-black tracking-widest border border-white/10 shadow-[0_6px_18px_rgba(249,115,22,0.35)]"><i class="fa-solid fa-wand-magic-sparkles text-[11px]"></i> AI ENHANCED</span>
           </div>
-          <div class="flex items-center gap-2">
-            <span id="enhancedFPS" class="px-2.5 py-1 rounded-full bg-[#0b132e] border border-white/[0.08] text-xs font-mono font-black text-sky-200">0 FPS</span>
+          <div class="flex items-center gap-2 shrink-0">
+            <span id="enhancedFPS" class="px-2.5 py-1 rounded-full bg-[#0b132e] border border-white/[0.08] text-xs font-mono font-black text-orange-200">0 FPS</span>
             <span id="enhancedCount" class="px-2.5 py-1 rounded-full bg-emerald-500 text-white text-xs font-black border border-emerald-400/30 shadow-[0_6px_18px_rgba(16,185,129,0.35)]">0 TRACKED</span>
           </div>
         </div>
-        <div class="relative bg-[#04081a] aspect-video overflow-hidden">
-          <canvas id="canvasEnhanced" class="w-full h-full object-cover"></canvas>
-          <canvas id="overlayEnhanced" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
-          <div id="placeholderEnhanced" class="absolute inset-0 flex flex-col items-center justify-center gap-3">
-            <div class="absolute inset-0 bg-gradient-to-br from-sky-950/40 via-indigo-950/20 to-[#04081a]"></div>
-            <div class="absolute inset-0 opacity-[0.06]" style="background-image: radial-gradient(rgba(255,255,255,0.8) 1.2px, transparent 1.2px); background-size: 16px 16px;"></div>
-            <div class="relative w-20 h-20 rounded-[18px] bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-[0_16px_40px_rgba(14,165,233,0.45)] border border-white/15 animate-float">
+        <div class="relative bg-[#04081a] aspect-video overflow-hidden corner-brackets sky">
+          <canvas id="canvasEnhanced" class="w-full h-full object-cover" role="img" aria-label="Dehazed frame with detections"></canvas>
+          <canvas id="overlayEnhanced" class="absolute inset-0 w-full h-full pointer-events-none" aria-hidden="true"></canvas>
+          <div class="scanline"></div>
+          <span class="cb"></span>
+          <div id="placeholderEnhanced" class="absolute inset-0 flex flex-col items-center justify-center gap-3 placeholder-card">
+            <div class="absolute inset-0 bg-gradient-to-br from-orange-950/40 via-stone-950/20 to-[#04081a]"></div>
+            <div class="absolute inset-0 opacity-[0.06]" style="background-image: radial-gradient(rgba(255,255,255,0.85) 1.2px, transparent 1.2px); background-size: 16px 16px;"></div>
+            <div class="relative w-20 h-20 rounded-[18px] bg-gradient-to-br from-orange-500 to-stone-950 flex items-center justify-center shadow-[0_16px_40px_rgba(249,115,22,0.45)] border border-white/15 animate-float placeholder-icon">
               <i class="fa-solid fa-wand-magic-sparkles text-2xl text-white"></i>
             </div>
-            <p class="relative font-display font-bold text-sky-100">Enhanced Output</p>
-            <p class="relative text-xs text-sky-200/60 font-medium">Dehazed stream + YOLO overlay will appear here</p>
-            <div class="relative mt-1 flex items-center gap-2 text-[11px] px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/[0.08] text-sky-200">
-              <span class="w-2 h-2 rounded-full bg-sky-400 animate-pulse"></span> Waiting for input
+            <p class="relative font-display font-bold text-orange-100">Enhanced Output</p>
+            <p class="relative text-xs text-orange-200/60 font-medium">Dehazed stream + YOLO overlay will appear here</p>
+            <div class="relative mt-1 flex items-center gap-2 text-[11px] px-3 py-1.5 rounded-full glass text-orange-200">
+              <span class="w-2 h-2 rounded-full bg-orange-400 animate-pulse"></span> Waiting for input
             </div>
           </div>
           <!-- Distance HUD -->
-          <div class="absolute top-3 left-3 bg-[#060a1a]/80 backdrop-blur-xl px-3.5 py-2.5 rounded-2xl border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.45)] min-w-[168px]">
+          <div class="absolute top-3 left-3 hud px-3.5 py-2.5 rounded-2xl min-w-[168px]">
             <div class="text-[10px] tracking-[0.16em] text-white/60 font-black flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation text-amber-300"></i> NEAREST HAZARD</div>
             <div id="nearestHazard" class="font-black text-white text-[13px] leading-tight mt-1">—</div>
             <div id="nearestDist" class="text-emerald-300 font-mono font-bold text-sm">— m</div>
           </div>
           <div class="absolute top-3 right-3 flex flex-col gap-2 items-end">
             <div id="visibilityBadge" class="px-3.5 py-2 rounded-full bg-emerald-500 text-white text-xs font-black tracking-widest shadow-[0_10px_24px_rgba(16,185,129,0.35)] border border-white/10">VISIBILITY: HIGH</div>
-            <div id="trackingBadge" class="px-3 py-1.5 rounded-full bg-[#060a1a]/80 backdrop-blur border border-white/10 text-xs font-black tracking-widest text-slate-200">TRACKING: IDLE</div>
+            <div id="aiFogBadge" class="px-3 py-1.5 rounded-full hud text-xs font-black tracking-widest flex items-center gap-1.5 border border-amber-400/20 text-amber-200"><i class="fa-solid fa-brain text-[11px]"></i> AI FOG: <span id="aiFogValue" class="text-white">—</span> <span id="aiFogConf" class="text-amber-600 font-mono">—</span></div>
+            <div id="trackingBadge" class="px-3 py-1.5 rounded-full hud text-xs font-black tracking-widest text-slate-200">TRACKING: IDLE</div>
           </div>
           <div class="absolute bottom-3 left-3 right-3 flex gap-2">
-            <div class="flex-1 bg-[#060a1a]/80 backdrop-blur-xl rounded-2xl px-3.5 py-2.5 border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.45)]">
+            <div class="flex-1 hud rounded-2xl px-3.5 py-2.5">
               <div class="text-[10px] tracking-[0.16em] text-white/60 font-black">DEHAZING STRENGTH</div>
-              <div class="flex items-center gap-2.5 mt-1"><div class="flex-1 h-2 rounded-full bg-white/10 overflow-hidden p-0.5"><div id="dehazeBar" class="h-full rounded-full bg-gradient-to-r from-sky-400 to-indigo-500" style="width:75%"></div></div><span id="dehazeValue" class="text-xs font-mono font-black text-sky-300">0.95</span></div>
+              <div class="flex items-center gap-2.5 mt-1"><div class="flex-1 h-2 rounded-full bg-white/10 overflow-hidden p-0.5"><div id="dehazeBar" class="h-full rounded-full bg-gradient-to-r from-orange-400 to-stone-900 transition-all" style="width:88%"></div></div><span id="dehazeValue" class="text-xs font-mono font-black text-orange-300">0.88</span></div>
             </div>
-            <div class="hidden md:flex bg-[#060a1a]/80 backdrop-blur-xl rounded-2xl px-3.5 py-2.5 border border-white/10 flex-col justify-center">
+            <div class="hidden md:flex hud rounded-2xl px-3.5 py-2.5 flex-col justify-center min-w-[120px]">
               <div class="text-[10px] tracking-[0.16em] text-white/60 font-black">VOICE ALERT</div>
-              <div id="voiceStatus" class="text-xs font-black text-slate-200 mt-0.5">Ready</div>
+              <div id="voiceStatus" class="text-xs font-black text-slate-200 mt-0.5 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Ready</div>
             </div>
           </div>
-          <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-400/60 to-transparent opacity-70"></div>
+          <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-orange-400/60 to-transparent opacity-70"></div>
         </div>
-        <div class="relative px-4 py-2.5 bg-white/[0.02] border-t border-white/[0.06] flex items-center justify-between text-xs">
-          <span class="flex items-center gap-2 font-semibold text-slate-300"><span class="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]"></span> DCP + Guided Filter + CLAHE <span id="dehazeMs" class="text-slate-400 font-mono">— ms</span></span>
-          <span id="yoloLabel" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.06] border border-white/[0.08] font-black tracking-widest text-slate-200">YOLO • 80 classes</span>
+        <div class="relative px-4 py-2.5 bg-white/[0.02] border-t border-white/[0.06] flex items-center justify-between text-xs gap-2">
+          <span class="flex items-center gap-2 font-semibold text-slate-300 min-w-0"><span class="w-2 h-2 rounded-full bg-orange-400 shadow-[0_0_8px_rgba(56,189,248,0.8)] shrink-0"></span> <span class="truncate">DCP + Guided Filter + CLAHE <span id="dehazeMs" class="text-slate-400 font-mono">— ms</span></span></span>
+          <span id="yoloLabel" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full glass font-black tracking-widest text-slate-200 shrink-0">YOLO • 80 classes</span>
         </div>
-      </div>
-    </div>
+      </article>
+    </section>
 
     <!-- Processing Pipeline & Controls -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 pipeline-grid">
       <!-- Pipeline Controls -->
-      <div class="lg:col-span-8 relative overflow-hidden rounded-[22px] border border-white/[0.08] bg-white/[0.04] backdrop-blur-2xl shadow-card">
-        <div class="absolute inset-0 pointer-events-none opacity-40" style="background: radial-gradient(700px 260px at 20% 0%, rgba(14,165,233,0.08), transparent 65%), radial-gradient(600px 240px at 90% 20%, rgba(99,102,241,0.06), transparent 65%);"></div>
+      <section aria-label="Processing pipeline tuning" class="lg:col-span-8 relative overflow-hidden rounded-[22px] glass shadow-card">
+        <div class="absolute inset-0 pointer-events-none opacity-40" style="background: radial-gradient(700px 260px at 20% 0%, rgba(249,115,22,0.08), transparent 65%), radial-gradient(600px 240px at 90% 20%, rgba(99,102,241,0.06), transparent 65%);"></div>
         <div class="relative p-5 md:p-6">
           <div class="flex items-center justify-between gap-3 mb-5">
             <h3 class="font-display font-bold text-[13px] tracking-[0.16em] flex items-center gap-2.5 text-white">
-              <span class="w-8 h-8 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center border border-white/10 shadow-[0_8px_20px_rgba(14,165,233,0.35)]"><i class="fa-solid fa-sliders text-white text-xs"></i></span>
+              <span class="w-8 h-8 rounded-xl bg-gradient-to-br from-orange-500 to-stone-950 flex items-center justify-center border border-white/10 shadow-[0_8px_20px_rgba(249,115,22,0.35)]"><i class="fa-solid fa-sliders text-white text-xs"></i></span>
               PROCESSING PIPELINE
               <span class="hidden md:inline-flex ml-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-400/15 text-emerald-300 text-[11px] font-black tracking-widest">REAL-TIME</span>
             </h3>
@@ -336,198 +372,287 @@
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <!-- Dehazing -->
-            <div class="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0b132e]/80 backdrop-blur p-4 shadow-[0_12px_30px_rgba(0,0,0,0.35)] hover:border-white/[0.12] transition">
-              <div class="absolute inset-0 pointer-events-none opacity-60" style="background: radial-gradient(400px 160px at 0% 0%, rgba(14,165,233,0.12), transparent 60%);"></div>
+            <div class="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0b132e]/85 backdrop-blur p-4 shadow-[0_12px_30px_rgba(0,0,0,0.35)] card-lift group">
+              <div class="absolute inset-0 pointer-events-none opacity-60 group-hover:opacity-80 transition" style="background: radial-gradient(400px 160px at 0% 0%, rgba(249,115,22,0.10), transparent 60%);"></div>
               <div class="relative flex items-center justify-between mb-4">
-                <span class="font-black text-sm flex items-center gap-2.5 text-white"><span class="w-8 h-8 rounded-xl bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center border border-white/10 shadow-[0_8px_18px_rgba(14,165,233,0.35)]"><i class="fa-solid fa-wind text-white text-xs"></i></span> Dehazing / Enhancement</span>
+                <span class="font-black text-sm flex items-center gap-2.5 text-white"><span class="w-8 h-8 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center border border-white/10 shadow-[0_8px_18px_rgba(249,115,22,0.35)]"><i class="fa-solid fa-wind text-white text-xs"></i></span> Dehazing / Enhancement</span>
                 <label class="relative inline-flex items-center cursor-pointer">
                   <input id="toggleDehaze" type="checkbox" checked class="sr-only peer"/>
-                  <div class="w-12 h-7 bg-white/10 peer-focus:outline-none rounded-full peer border border-white/10 after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:shadow peer-checked:after:translate-x-5 peer-checked:bg-gradient-to-r peer-checked:from-sky-500 peer-checked:to-indigo-500"></div>
+                  <div class="toggle peer"></div>
                 </label>
               </div>
               <div class="relative space-y-4">
+                <button id="btnUltraClear" type="button" class="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-orange-500 via-amber-500 to-stone-900 hover:from-orange-400 hover:to-stone-800 text-white font-black text-xs flex items-center justify-center gap-2 shadow-[0_6px_18px_rgba(249,115,22,0.4)] transition cursor-pointer border border-orange-400/30"><i class="fa-solid fa-wand-magic-sparkles text-amber-300"></i> ⚡ ULTRA CLEAR (BEST QUALITY)</button>
                 <div>
-                  <div class="flex justify-between text-xs font-black mb-2"><span class="text-slate-400 tracking-widest">Strength (ω)</span><span id="strengthVal" class="text-sky-300 font-mono bg-sky-500/10 border border-sky-400/15 px-2 py-0.5 rounded-full">0.95</span></div>
-                  <input id="strength" type="range" min="0" max="1" step="0.05" value="0.95" class="w-full accent-sky-500 h-2"/>
+                  <div class="flex justify-between text-xs font-black mb-2"><span class="text-slate-400 tracking-widest">Strength (ω)</span><span id="strengthVal" class="text-orange-300 font-mono bg-orange-500/10 border border-orange-400/15 px-2.5 py-0.5 rounded-full">0.88</span></div>
+                  <input id="strength" type="range" min="0" max="1" step="0.05" value="0.88" class="w-full"/>
                   <div class="mt-1 flex justify-between text-[10px] font-bold text-slate-500"><span>Soft</span><span>Aggressive</span></div>
                 </div>
                 <div>
-                  <div class="flex justify-between text-xs font-black mb-2"><span class="text-slate-400 tracking-widest">Contrast (CLAHE)</span><span id="claheVal" class="text-sky-300 font-mono bg-sky-500/10 border border-sky-400/15 px-2 py-0.5 rounded-full">1.20</span></div>
-                  <input id="clahe" type="range" min="0.8" max="2" step="0.1" value="1.2" class="w-full accent-sky-500 h-2"/>
+                  <div class="flex justify-between text-xs font-black mb-2"><span class="text-slate-400 tracking-widest">Contrast (S-Curve)</span><span id="claheVal" class="text-orange-300 font-mono bg-orange-500/10 border border-orange-400/15 px-2.5 py-0.5 rounded-full">1.20</span></div>
+                  <input id="clahe" type="range" min="0.8" max="2" step="0.05" value="1.20" class="w-full"/>
                 </div>
                 <div class="flex flex-wrap gap-2">
-                  <label class="flex items-center gap-2 text-xs font-black bg-white/[0.06] px-3 py-2 rounded-full border border-white/[0.08] cursor-pointer hover:bg-white/[0.10] transition"><input id="toggleCLAHE" type="checkbox" checked class="accent-sky-500 w-4 h-4"/> CLAHE</label>
-                  <label class="flex items-center gap-2 text-xs font-black bg-white/[0.06] px-3 py-2 rounded-full border border-white/[0.08] cursor-pointer hover:bg-white/[0.10] transition"><input id="toggleSharpen" type="checkbox" checked class="accent-sky-500 w-4 h-4"/> Sharpen</label>
-                  <span id="t0Label" class="ml-auto text-xs font-mono font-bold text-slate-400 bg-white/[0.06] px-2.5 py-2 rounded-full border border-white/[0.08]">t₀=0.10</span>
+                  <label class="flex items-center gap-2 text-xs font-black glass px-3 py-2 rounded-full cursor-pointer hover:bg-white/[0.08] transition"><input id="toggleCLAHE" type="checkbox" checked class="accent-orange-500 w-4 h-4"/> Contrast</label>
+                  <label class="flex items-center gap-2 text-xs font-black glass px-3 py-2 rounded-full cursor-pointer hover:bg-white/[0.08] transition"><input id="toggleSharpen" type="checkbox" checked class="accent-orange-500 w-4 h-4"/> Sharpen</label>
+                  <span id="t0Label" class="ml-auto text-xs font-mono font-bold text-slate-400 glass px-2.5 py-2 rounded-full">t₀=0.18</span>
                 </div>
               </div>
             </div>
             <!-- Detection -->
-            <div class="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0b132e]/80 backdrop-blur p-4 shadow-[0_12px_30px_rgba(0,0,0,0.35)] hover:border-white/[0.12] transition">
-              <div class="absolute inset-0 pointer-events-none opacity-60" style="background: radial-gradient(400px 160px at 100% 0%, rgba(168,85,247,0.12), transparent 60%);"></div>
+            <div class="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0b132e]/85 backdrop-blur p-4 shadow-[0_12px_30px_rgba(0,0,0,0.35)] card-lift group">
+              <div class="absolute inset-0 pointer-events-none opacity-60 group-hover:opacity-80 transition" style="background: radial-gradient(400px 160px at 100% 0%, rgba(168,85,247,0.10), transparent 60%);"></div>
               <div class="relative flex items-center justify-between mb-4">
-                <span class="font-black text-sm flex items-center gap-2.5 text-white"><span class="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center border border-white/10 shadow-[0_8px_18px_rgba(139,92,246,0.35)]"><i class="fa-solid fa-bullseye text-white text-xs"></i></span> YOLO Detection</span>
+                <span class="font-black text-sm flex items-center gap-2.5 text-white"><span class="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500 to-stone-950 flex items-center justify-center border border-white/10 shadow-[0_8px_18px_rgba(139,92,246,0.35)]"><i class="fa-solid fa-bullseye text-white text-xs"></i></span> YOLO Detection</span>
                 <label class="relative inline-flex items-center cursor-pointer">
                   <input id="toggleDetect" type="checkbox" checked class="sr-only peer"/>
-                  <div class="w-12 h-7 bg-white/10 peer-focus:outline-none rounded-full peer border border-white/10 after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5 peer-checked:bg-gradient-to-r peer-checked:from-violet-500 peer-checked:to-indigo-500"></div>
+                  <div class="toggle violet peer"></div>
                 </label>
               </div>
               <div class="relative space-y-4">
                 <div>
-                  <div class="flex justify-between text-xs font-black mb-2"><span class="text-slate-400 tracking-widest">Confidence Threshold</span><span id="confVal" class="text-violet-300 font-mono bg-violet-500/10 border border-violet-400/15 px-2 py-0.5 rounded-full">0.50</span></div>
-                  <input id="conf" type="range" min="0.1" max="0.9" step="0.05" value="0.5" class="w-full accent-violet-500 h-2"/>
+                  <div class="flex justify-between text-xs font-black mb-2"><span class="text-slate-400 tracking-widest">Confidence Threshold</span><span id="confVal" class="text-amber-600 font-mono bg-amber-500/10 border border-amber-400/15 px-2.5 py-0.5 rounded-full">0.50</span></div>
+                  <input id="conf" type="range" min="0.1" max="0.9" step="0.05" value="0.5" class="w-full accent-amber-500"/>
                   <div class="mt-1 flex justify-between text-[10px] font-bold text-slate-500"><span>More boxes</span><span>Strict</span></div>
                 </div>
                 <div class="flex gap-2 flex-wrap">
-                  <label class="flex items-center gap-2 text-xs font-black bg-white/[0.06] px-3 py-2 rounded-full border border-white/[0.08] cursor-pointer hover:bg-white/[0.10] transition"><input id="toggleTrack" type="checkbox" checked class="accent-violet-500 w-4 h-4"/> Tracking</label>
-                  <label class="flex items-center gap-2 text-xs font-black bg-white/[0.06] px-3 py-2 rounded-full border border-white/[0.08] cursor-pointer hover:bg-white/[0.10] transition"><input id="toggleDistance" type="checkbox" checked class="accent-violet-500 w-4 h-4"/> Distance</label>
-                  <label class="flex items-center gap-2 text-xs font-black bg-white/[0.06] px-3 py-2 rounded-full border border-white/[0.08] cursor-pointer hover:bg-white/[0.10] transition"><input id="toggleAlerts" type="checkbox" checked class="accent-emerald-500 w-4 h-4"/> Alerts</label>
+                  <label class="flex items-center gap-2 text-xs font-black glass px-3 py-2 rounded-full cursor-pointer hover:bg-white/[0.08] transition"><input id="toggleTrack" type="checkbox" checked class="accent-amber-500 w-4 h-4"/> Tracking</label>
+                  <label class="flex items-center gap-2 text-xs font-black glass px-3 py-2 rounded-full cursor-pointer hover:bg-white/[0.08] transition"><input id="toggleDistance" type="checkbox" checked class="accent-amber-500 w-4 h-4"/> Distance</label>
+                  <label class="flex items-center gap-2 text-xs font-black glass px-3 py-2 rounded-full cursor-pointer hover:bg-white/[0.08] transition"><input id="toggleAlerts" type="checkbox" checked class="accent-emerald-500 w-4 h-4"/> Alerts</label>
+                  <label title="TinyUNet road mask — orange border across the road" class="flex items-center gap-2 text-xs font-black glass px-3 py-2 rounded-full cursor-pointer hover:bg-white/[0.08] transition border-orange-400/30"><input id="toggleSeg" type="checkbox" checked class="accent-orange-500 w-4 h-4"/> Road</label>
                 </div>
+                <div class="text-[11px] text-slate-500 font-semibold flex items-center gap-1.5 px-1"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:#fb923c;box-shadow:0 0 8px #fb923c"></span> Road border: TinyUNet mask + orange edge on enhanced feed</div>
                 <div class="flex gap-2">
-                  <button id="btnVoice" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-black text-xs flex items-center justify-center gap-2 shadow-[0_8px_20px_rgba(16,185,129,0.35)] border border-white/10 transition"><i class="fa-solid fa-volume-high"></i> VOICE ON</button>
-                  <button id="btnMute" class="px-4 py-2.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.10] border border-white/[0.08] font-bold text-xs text-slate-200 transition">Mute</button>
+                  <button id="btnVoice" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-black text-xs flex items-center justify-center gap-2 shadow-[0_8px_20px_rgba(16,185,129,0.35)] border border-white/10 btn-shine"><i class="fa-solid fa-volume-high"></i> VOICE ON</button>
+                  <button id="btnMute" class="px-4 py-2.5 rounded-xl glass hover:bg-white/[0.08] font-bold text-xs text-slate-200">Mute</button>
                 </div>
               </div>
             </div>
           </div>
           <!-- Fog Metrics -->
           <div class="grid grid-cols-3 gap-3 mt-5">
-            <div class="relative overflow-hidden rounded-2xl bg-[#0b132e]/80 border border-white/[0.08] p-4 text-center hover:border-white/[0.12] transition">
-              <div class="absolute inset-0 opacity-40" style="background: radial-gradient(300px 120px at 50% 0%, rgba(56,189,248,0.10), transparent 70%);"></div>
+            <div class="relative overflow-hidden rounded-2xl bg-[#0b132e]/85 border border-white/[0.08] p-4 text-center card-lift">
+              <div class="absolute inset-0 opacity-40" style="background: radial-gradient(300px 120px at 50% 0%, rgba(56,189,248,0.09), transparent 70%);"></div>
               <div class="relative text-[10px] tracking-[0.16em] font-black text-slate-400">DARK CHANNEL MEAN</div>
               <div id="metricDark" class="relative font-mono font-black text-xl text-white mt-1">0.00</div>
               <div class="relative text-xs text-slate-500 font-semibold">fog indicator</div>
-              <div class="relative mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden"><div class="h-full w-[30%] rounded-full bg-gradient-to-r from-sky-400 to-indigo-500"></div></div>
+              <div class="relative mt-2.5 h-1.5 rounded-full bg-white/10 overflow-hidden"><div class="h-full w-[30%] rounded-full bg-gradient-to-r from-orange-400 to-stone-900 transition-all"></div></div>
             </div>
-            <div class="relative overflow-hidden rounded-2xl bg-[#0b132e]/80 border border-white/[0.08] p-4 text-center hover:border-white/[0.12] transition">
-              <div class="absolute inset-0 opacity-40" style="background: radial-gradient(300px 120px at 50% 0%, rgba(245,158,11,0.10), transparent 70%);"></div>
+            <div class="relative overflow-hidden rounded-2xl bg-[#0b132e]/85 border border-white/[0.08] p-4 text-center card-lift">
+              <div class="absolute inset-0 opacity-40" style="background: radial-gradient(300px 120px at 50% 0%, rgba(245,158,11,0.09), transparent 70%);"></div>
               <div class="relative text-[10px] tracking-[0.16em] font-black text-slate-400">CONTRAST LOSS</div>
               <div id="metricContrast" class="relative font-mono font-black text-xl text-white mt-1">0%</div>
               <div class="relative text-xs text-slate-500 font-semibold">visibility drop</div>
-              <div class="relative mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden"><div class="h-full w-[45%] rounded-full bg-gradient-to-r from-amber-400 to-orange-500"></div></div>
+              <div class="relative mt-2.5 h-1.5 rounded-full bg-white/10 overflow-hidden"><div class="h-full w-[45%] rounded-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all"></div></div>
             </div>
-            <div class="relative overflow-hidden rounded-2xl bg-[#0b132e]/80 border border-white/[0.08] p-4 text-center hover:border-white/[0.12] transition">
-              <div class="absolute inset-0 opacity-40" style="background: radial-gradient(300px 120px at 50% 0%, rgba(16,185,129,0.12), transparent 70%);"></div>
+            <div class="relative overflow-hidden rounded-2xl bg-[#0b132e]/85 border border-white/[0.08] p-4 text-center card-lift">
+              <div class="absolute inset-0 opacity-40" style="background: radial-gradient(300px 120px at 50% 0%, rgba(16,185,129,0.10), transparent 70%);"></div>
               <div class="relative text-[10px] tracking-[0.16em] font-black text-slate-400">EST. VISIBILITY</div>
               <div id="metricVis" class="relative font-mono font-black text-xl text-emerald-300 mt-1">— m</div>
               <div class="relative text-xs text-slate-500 font-semibold">meteorological</div>
-              <div class="relative mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden"><div class="h-full w-[80%] rounded-full bg-gradient-to-r from-emerald-400 to-teal-500"></div></div>
+              <div class="relative mt-2.5 h-1.5 rounded-full bg-white/10 overflow-hidden"><div class="h-full w-[80%] rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 transition-all"></div></div>
+            </div>
+          </div>
+          <!-- AI Fog Classifier -->
+          <div class="relative overflow-hidden rounded-2xl border border-amber-400/20 bg-gradient-to-br from-amber-500/[0.08] via-stone-900/[0.06] to-transparent backdrop-blur p-4 mt-3 card-lift">
+            <div class="absolute inset-0 pointer-events-none opacity-40" style="background: radial-gradient(500px 120px at 0% 0%, rgba(139,92,246,0.12), transparent 70%);"></div>
+            <div class="relative flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <span class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-stone-950 flex items-center justify-center border border-white/10 shadow-[0_8px_18px_rgba(139,92,246,0.35)]"><i class="fa-solid fa-brain text-white text-sm"></i></span>
+                <div>
+                  <div class="font-black text-sm text-white tracking-tight flex items-center gap-2">AI FOG CLASSIFIER <span class="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/20 text-amber-200 text-[10px] font-black tracking-widest">MobileNetV2 • 527 imgs</span> <span id="aiModelStatus" class="px-2 py-0.5 rounded-full bg-white/[0.06] border border-white/[0.08] text-slate-300 text-[10px] font-bold">loading…</span></div>
+                  <div class="text-xs text-slate-400 font-medium">Trained on your dataset — <span id="aiDatasetInfo" class="text-slate-300 font-bold">100 fog (FoggyRoad) / 206 clear • 100% val • 100% test</span></div>
+                </div>
+              </div>
+              <div class="hidden md:flex items-center gap-2">
+                <span id="aiLabelBadge" class="px-3 py-1.5 rounded-full bg-slate-800 border border-white/[0.08] text-slate-300 text-xs font-black tracking-widest">—</span>
+                <span id="aiProbBadge" class="px-3 py-1.5 rounded-full bg-amber-500 text-white text-xs font-black shadow-[0_6px_16px_rgba(139,92,246,0.35)]">—%</span>
+              </div>
+            </div>
+            <div class="relative mt-3 grid grid-cols-3 gap-3">
+              <div class="col-span-2">
+                <div class="flex justify-between text-[11px] font-black mb-1.5"><span class="text-slate-400 tracking-widest">FOG PROBABILITY</span><span id="aiFogPct" class="text-amber-600 font-mono">—%</span></div>
+                <div class="h-3 rounded-full bg-white/10 overflow-hidden p-1 flex gap-1">
+                  <div id="aiFogBar" class="h-full rounded-full bg-gradient-to-r from-amber-500 to-stone-900 transition-all duration-500" style="width: 50%"></div>
+                </div>
+                <div class="flex justify-between text-[10px] font-bold text-slate-500 mt-1"><span>Clear 0%</span><span>Fog 100%</span></div>
+              </div>
+              <div class="rounded-xl bg-[#0b132e]/80 border border-white/[0.08] p-3 text-center">
+                <div class="text-[10px] tracking-[0.16em] font-black text-slate-400">PREDICTION</div>
+                <div id="aiPredLabel" class="font-black text-lg text-white mt-1">—</div>
+                <div id="aiPredConf" class="text-xs font-mono font-bold text-amber-600">—% conf</div>
+              </div>
+            </div>
+            <div class="relative mt-2 flex items-center gap-2 text-[11px] text-slate-500 font-medium">
+              <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Hybrid: DCP + learned model • Runs on-device via ONNX Runtime Web
+              <span class="ml-auto hidden md:inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-white/[0.06] border border-white/[0.08] text-slate-300 font-bold"><i class="fa-solid fa-bolt text-amber-300"></i> 224×224 • ~12ms</span>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Right Panel: Objects + Alerts Log -->
-      <div class="lg:col-span-4 flex flex-col gap-5">
-        <div class="relative overflow-hidden rounded-[22px] border border-white/[0.08] bg-white/[0.04] backdrop-blur-2xl shadow-card flex-1 p-4">
-          <div class="absolute inset-0 pointer-events-none opacity-30" style="background: radial-gradient(500px 200px at 50% 0%, rgba(16,185,129,0.08), transparent 70%);"></div>
+      <aside aria-label="Tracked objects and alerts" class="lg:col-span-4 flex flex-col gap-5">
+        <section aria-label="Tracked objects" class="relative overflow-hidden rounded-[22px] glass shadow-card flex-1 p-4">
+          <div class="absolute inset-0 pointer-events-none opacity-30" style="background: radial-gradient(500px 200px at 50% 0%, rgba(16,185,129,0.07), transparent 70%);"></div>
           <h3 class="relative font-display font-bold text-[13px] tracking-[0.14em] flex items-center gap-2.5 text-white mb-3">
             <span class="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center border border-white/10 shadow-[0_8px_18px_rgba(16,185,129,0.35)]"><i class="fa-solid fa-list-check text-white text-xs"></i></span>
             TRACKED OBJECTS <span id="objBadge" class="ml-auto bg-[#0b132e] border border-white/[0.08] px-2.5 py-1 rounded-full text-xs font-mono font-black text-white">0</span>
           </h3>
-          <div id="objectList" class="relative space-y-2.5 max-h-[260px] overflow-auto pr-1 custom-scroll">
-            <div class="py-10 text-center">
-              <div class="w-14 h-14 mx-auto rounded-2xl bg-white/[0.05] border border-white/[0.08] flex items-center justify-center mb-3"><i class="fa-solid fa-radar text-slate-400"></i></div>
+          <div id="objectList" role="status" aria-live="polite" class="relative space-y-2.5 max-h-[260px] overflow-auto pr-1 custom-scroll">
+            <div class="py-10 text-center empty-glow rounded-2xl border border-white/[0.04]">
+              <div class="w-14 h-14 mx-auto rounded-2xl glass flex items-center justify-center mb-3"><i class="fa-solid fa-radar text-slate-400"></i></div>
               <div class="text-sm font-bold text-slate-300">No detections yet</div>
               <div class="text-xs text-slate-500 font-medium">Start camera to see YOLO tracking</div>
             </div>
           </div>
           <div class="relative mt-4 grid grid-cols-2 gap-3 text-xs">
-            <div class="rounded-2xl bg-[#0b132e]/80 border border-white/[0.08] p-3.5">
-              <div class="text-slate-400 font-black text-[10px] tracking-[0.16em] flex items-center gap-1.5"><i class="fa-solid fa-bullseye text-sky-300"></i> TOTAL DETECTED</div>
+            <div class="rounded-2xl bg-[#0b132e]/85 border border-white/[0.08] p-3.5 card-lift">
+              <div class="text-slate-400 font-black text-[10px] tracking-[0.16em] flex items-center gap-1.5"><i class="fa-solid fa-bullseye text-orange-300"></i> TOTAL DETECTED</div>
               <div id="totalDet" class="font-mono font-black text-2xl text-white mt-1">0</div>
-              <div class="mt-1 h-1 rounded-full bg-white/10 overflow-hidden"><div class="h-full w-2/3 rounded-full bg-gradient-to-r from-sky-400 to-indigo-500"></div></div>
+              <div class="mt-1.5 h-1 rounded-full bg-white/10 overflow-hidden"><div class="h-full w-2/3 rounded-full bg-gradient-to-r from-orange-400 to-stone-900"></div></div>
             </div>
-            <div class="rounded-2xl bg-[#0b132e]/80 border border-white/[0.08] p-3.5">
+            <div class="rounded-2xl bg-[#0b132e]/85 border border-white/[0.08] p-3.5 card-lift">
               <div class="text-slate-400 font-black text-[10px] tracking-[0.16em] flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation text-red-300"></i> HAZARDS &lt;30m</div>
               <div id="hazardCount" class="font-mono font-black text-2xl text-red-400 mt-1">0</div>
-              <div class="mt-1 h-1 rounded-full bg-white/10 overflow-hidden"><div class="h-full w-1/3 rounded-full bg-gradient-to-r from-red-400 to-orange-500"></div></div>
+              <div class="mt-1.5 h-1 rounded-full bg-white/10 overflow-hidden"><div class="h-full w-1/3 rounded-full bg-gradient-to-r from-red-400 to-orange-500"></div></div>
             </div>
           </div>
-        </div>
+        </section>
 
-        <div class="relative overflow-hidden rounded-[22px] border border-white/[0.08] bg-white/[0.04] backdrop-blur-2xl shadow-card p-4">
-          <div class="absolute inset-0 pointer-events-none opacity-30" style="background: radial-gradient(500px 200px at 50% 0%, rgba(245,158,11,0.08), transparent 70%);"></div>
+        <section aria-label="Alerts and events" class="relative overflow-hidden rounded-[22px] glass shadow-card p-4">
+          <div class="absolute inset-0 pointer-events-none opacity-30" style="background: radial-gradient(500px 200px at 50% 0%, rgba(245,158,11,0.07), transparent 70%);"></div>
           <h3 class="relative font-display font-bold text-[13px] tracking-[0.14em] flex items-center gap-2.5 text-white mb-3">
             <span class="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center border border-white/10 shadow-[0_8px_18px_rgba(245,158,11,0.35)]"><i class="fa-solid fa-triangle-exclamation text-white text-xs"></i></span>
-            ALERTS & EVENTS <button id="btnClearAlerts" class="ml-auto text-xs px-3 py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.10] border border-white/[0.08] font-bold text-slate-200 transition">Clear</button>
+            ALERTS & EVENTS <button id="btnClearAlerts" class="ml-auto text-xs px-3 py-1.5 rounded-full glass hover:bg-white/[0.08] font-bold text-slate-200">Clear</button>
           </h3>
-          <div id="alertLog" class="relative space-y-2 max-h-[190px] overflow-auto pr-1 text-xs custom-scroll">
-            <div class="text-center py-6 rounded-2xl bg-white/[0.03] border border-white/[0.06] border-dashed">
+          <div id="alertLog" role="log" aria-live="polite" class="relative space-y-2 max-h-[190px] overflow-auto pr-1 text-xs custom-scroll">
+            <div class="text-center py-7 rounded-2xl glass border border-dashed border-white/[0.08]">
               <div class="w-10 h-10 mx-auto rounded-xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center mb-2"><i class="fa-regular fa-bell text-slate-400"></i></div>
-              <div class="text-slate-400 font-semibold">System ready — awaiting hazards</div>
-              <div class="text-[11px] text-slate-500">Voice + visual alerts active</div>
+              <div class="text-slate-300 font-bold">System ready — awaiting hazards</div>
+              <div class="text-[11px] text-slate-500 font-medium">Voice + visual alerts active</div>
             </div>
           </div>
-          <div class="relative mt-4 flex items-center gap-2 text-xs">
+          <div class="relative mt-4 flex items-center gap-2 text-xs flex-wrap">
             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span><span class="text-slate-400 font-semibold">Voice: <b id="voiceLabel" class="text-white font-black">Enabled</b> • Visual: <b class="text-white font-black">Active</b></span>
             <span class="ml-auto px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-400/15 text-amber-200 font-black tracking-widest text-[11px]" id="alertMode">AUTO</span>
           </div>
-        </div>
-      </div>
+        </section>
+      </aside>
     </div>
 
     <!-- How it Works / Info -->
-    <div id="infoSection" class="relative overflow-hidden rounded-[22px] border border-white/[0.08] bg-white/[0.04] backdrop-blur-2xl shadow-card p-5 md:p-7">
+    <section id="infoSection" aria-label="How it works" class="relative overflow-hidden rounded-[22px] glass shadow-card p-5 md:p-7 scroll-mt-24">
       <div class="absolute inset-0 pointer-events-none">
-        <div class="absolute inset-0 opacity-[0.04]" style="background-image: linear-gradient(rgba(255,255,255,0.7) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.7) 1px, transparent 1px); background-size: 24px 24px;"></div>
-        <div class="absolute -top-20 -right-20 w-80 h-80 rounded-full blur-3xl opacity-15" style="background: radial-gradient(circle, rgba(14,165,233,0.6), transparent 70%);"></div>
+        <div class="absolute inset-0 opacity-[0.03]" style="background-image: linear-gradient(rgba(255,255,255,0.7) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.7) 1px, transparent 1px); background-size: 24px 24px;"></div>
+        <div class="absolute -top-20 -right-20 w-80 h-80 rounded-full blur-3xl opacity-10" style="background: radial-gradient(circle, rgba(249,115,22,0.6), transparent 70%);"></div>
       </div>
       <div class="relative flex flex-wrap items-center justify-between gap-3 mb-6">
-        <h3 class="font-display font-bold tracking-[0.12em] text-[13px] flex items-center gap-2.5 text-white"><span class="w-8 h-8 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center border border-white/10"><i class="fa-solid fa-circle-info text-white text-xs"></i></span> HOW SMART FOG VISION WORKS</h3>
+        <h3 class="font-display font-bold tracking-[0.12em] text-[13px] flex items-center gap-2.5 text-white"><span class="w-8 h-8 rounded-xl bg-gradient-to-br from-orange-500 to-stone-950 flex items-center justify-center border border-white/10 shadow-[0_8px_18px_rgba(249,115,22,0.35)]"><i class="fa-solid fa-circle-info text-white text-xs"></i></span> HOW SMART FOG VISION WORKS</h3>
         <div class="flex items-center gap-2 text-xs">
-          <span class="px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/[0.08] font-bold text-slate-300">He et al. 2009 DCP</span>
-          <span class="hidden md:inline-flex px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/[0.08] font-bold text-slate-300">YOLOv8 • COCO 80</span>
+          <span class="px-3 py-1.5 rounded-full glass font-bold text-slate-300">He et al. 2009 DCP</span>
+          <span class="hidden md:inline-flex px-3 py-1.5 rounded-full glass font-bold text-slate-300">YOLOv8 • COCO 80</span>
+          <span class="hidden md:inline-flex px-3 py-1.5 rounded-full bg-orange-500/10 border border-orange-400/15 font-black text-orange-200">5 stages</span>
         </div>
       </div>
       <div class="relative grid grid-cols-1 md:grid-cols-5 gap-4 text-sm">
-        <div class="group relative overflow-hidden rounded-2xl bg-[#0b132e]/80 border border-white/[0.08] p-4 hover:border-sky-400/20 hover:-translate-y-1 transition duration-300">
-          <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition" style="background: radial-gradient(400px 140px at 0% 0%, rgba(14,165,233,0.10), transparent 70%);"></div>
-          <div class="relative w-9 h-9 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center text-white font-black shadow-[0_8px_18px_rgba(14,165,233,0.35)]">1</div>
+        <div class="group relative overflow-hidden rounded-2xl bg-[#0b132e]/85 border border-white/[0.08] p-4 card-lift">
+          <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition" style="background: radial-gradient(400px 140px at 0% 0%, rgba(249,115,22,0.09), transparent 70%);"></div>
+          <div class="relative w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-stone-950 flex items-center justify-center text-white font-black shadow-[0_8px_18px_rgba(249,115,22,0.35)]">1</div>
           <div class="relative font-black text-white mt-3">Capture</div><div class="relative text-slate-400 text-xs mt-1 leading-relaxed">Real-time webcam / image. Resized to 640px for inference. CORS-safe canvas pipeline.</div>
+          <div class="hidden md:block absolute top-1/2 -right-2 w-4 h-px bg-white/10"></div>
         </div>
-        <div class="group relative overflow-hidden rounded-2xl bg-[#0b132e]/80 border border-white/[0.08] p-4 hover:border-indigo-400/20 hover:-translate-y-1 transition duration-300">
-          <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition" style="background: radial-gradient(400px 140px at 0% 0%, rgba(99,102,241,0.10), transparent 70%);"></div>
-          <div class="relative w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white font-black shadow-[0_8px_18px_rgba(99,102,241,0.35)]">2</div>
+        <div class="group relative overflow-hidden rounded-2xl bg-[#0b132e]/85 border border-white/[0.08] p-4 card-lift">
+          <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition" style="background: radial-gradient(400px 140px at 0% 0%, rgba(99,102,241,0.09), transparent 70%);"></div>
+          <div class="relative w-9 h-9 rounded-xl bg-gradient-to-br from-stone-900 to-stone-900 flex items-center justify-center text-white font-black shadow-[0_8px_18px_rgba(99,102,241,0.35)]">2</div>
           <div class="relative font-black text-white mt-3">Fog Detect</div><div class="relative text-slate-400 text-xs mt-1 leading-relaxed">Dark Channel Prior + contrast variance → fog %, visibility (m), atmospheric light.</div>
+          <div class="hidden md:block absolute top-1/2 -right-2 w-4 h-px bg-white/10"></div>
         </div>
-        <div class="group relative overflow-hidden rounded-2xl bg-[#0b132e]/80 border border-white/[0.08] p-4 hover:border-violet-400/20 hover:-translate-y-1 transition duration-300">
-          <div class="relative w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-black shadow-[0_8px_18px_rgba(168,85,247,0.35)]">3</div>
+        <div class="group relative overflow-hidden rounded-2xl bg-[#0b132e]/85 border border-white/[0.08] p-4 card-lift">
+          <div class="relative w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-stone-900 flex items-center justify-center text-white font-black shadow-[0_8px_18px_rgba(168,85,247,0.35)]">3</div>
           <div class="relative font-black text-white mt-3">Dehaze</div><div class="relative text-slate-400 text-xs mt-1 leading-relaxed">DCP transmission, guided-filter smoothing, recovery + CLAHE & unsharp mask.</div>
+          <div class="hidden md:block absolute top-1/2 -right-2 w-4 h-px bg-white/10"></div>
         </div>
-        <div class="group relative overflow-hidden rounded-2xl bg-[#0b132e]/80 border border-white/[0.08] p-4 hover:border-emerald-400/20 hover:-translate-y-1 transition duration-300">
+        <div class="group relative overflow-hidden rounded-2xl bg-[#0b132e]/85 border border-white/[0.08] p-4 card-lift">
           <div class="relative w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-black shadow-[0_8px_18px_rgba(16,185,129,0.35)]">4</div>
           <div class="relative font-black text-white mt-3">Detect & Track</div><div class="relative text-slate-400 text-xs mt-1 leading-relaxed">YOLO COCO-SSD/ONNX 80 classes → IOU tracker (0.32/15) + persistent IDs.</div>
+          <div class="hidden md:block absolute top-1/2 -right-2 w-4 h-px bg-white/10"></div>
         </div>
-        <div class="group relative overflow-hidden rounded-2xl bg-[#0b132e]/80 border border-white/[0.08] p-4 hover:border-amber-400/20 hover:-translate-y-1 transition duration-300">
+        <div class="group relative overflow-hidden rounded-2xl bg-[#0b132e]/85 border border-white/[0.08] p-4 card-lift">
           <div class="relative w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white font-black shadow-[0_8px_18px_rgba(245,158,11,0.35)]">5</div>
           <div class="relative font-black text-white mt-3">Alert</div><div class="relative text-slate-400 text-xs mt-1 leading-relaxed">Pinhole distance → hazard tiers + boxes + Web Speech warnings.</div>
         </div>
       </div>
       <div class="relative mt-6 flex flex-wrap gap-2 text-xs">
-        <span class="px-3.5 py-2 rounded-full bg-[#0b132e]/80 border border-white/[0.08] font-bold text-slate-300 flex items-center gap-2"><i class="fa-solid fa-layer-group text-sky-300"></i> TF.js • ONNX Runtime • Web Speech API</span>
-        <span class="px-3.5 py-2 rounded-full bg-[#0b132e]/80 border border-white/[0.08] font-bold text-slate-300">Runs 100% in browser — no server</span>
-        <span class="px-3.5 py-2 rounded-full bg-[#0b132e]/80 border border-white/[0.08] font-bold text-slate-300">Chrome / Edge / Mobile • 640px • ~7 FPS</span>
+        <span class="px-3.5 py-2 rounded-full bg-[#0b132e]/85 border border-white/[0.08] font-bold text-slate-300 flex items-center gap-2"><i class="fa-solid fa-layer-group text-orange-300"></i> TF.js • ONNX Runtime • Web Speech API</span>
+        <span class="px-3.5 py-2 rounded-full bg-[#0b132e]/85 border border-white/[0.08] font-bold text-slate-300">Runs 100% in browser — no server</span>
+        <span class="px-3.5 py-2 rounded-full bg-[#0b132e]/85 border border-white/[0.08] font-bold text-slate-300">Chrome / Edge / Mobile • 640px • ~7 FPS</span>
+        <span class="hidden md:inline-flex ml-auto items-center gap-1.5 px-3 py-2 rounded-full bg-emerald-500/10 border border-emerald-400/15 text-emerald-200 font-black"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> All processing on-device</span>
       </div>
-    </div>
+    </section>
   </main>
 
-  <footer class="relative border-t border-white/[0.06] bg-[#050817]/60 backdrop-blur-xl">
+  <footer class="relative border-t border-orange-500/15 bg-stone-950/90 backdrop-blur-xl">
+    <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-orange-500/40 to-transparent"></div>
     <div class="max-w-[1600px] mx-auto px-4 md:px-6 py-5 flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
-      <div class="flex items-center gap-3 text-slate-400">
-        <span class="w-8 h-8 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center border border-white/10"><i class="fa-solid fa-eye-low-vision text-white text-xs"></i></span>
-        <span class="font-semibold">© 2026 Smart Fog Vision • Built for driver safety in fog • <a href="#" class="text-sky-300 hover:text-sky-200 font-bold">GitHub</a> • On-device, private</span>
+      <div class="flex items-center gap-3 text-slate-400 text-center md:text-left">
+        <span class="w-8 h-8 rounded-xl bg-gradient-to-br from-orange-500 to-stone-950 flex items-center justify-center border border-white/10 shadow-[0_8px_18px_rgba(249,115,22,0.25)]"><i class="fa-solid fa-eye-low-vision text-white text-xs"></i></span>
+        <span class="font-semibold leading-relaxed">© 2026 Smart Fog Vision • Built for driver safety in fog • <a href="#" class="text-orange-300 hover:text-orange-200 font-bold transition">GitHub</a> • <span class="text-slate-300 font-bold">On-device, private</span> • No data leaves your browser</span>
       </div>
-      <div class="flex items-center gap-2">
-        <span class="px-2.5 py-1 rounded-full bg-white/[0.06] border border-white/[0.08] font-bold text-slate-300">v2.0 • Premium UI</span>
-        <span class="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-400/15 text-emerald-300 font-black">● LIVE SYSTEM</span>
+      <div class="flex items-center gap-2 flex-wrap justify-center">
+        <span class="px-2.5 py-1.5 rounded-full glass font-bold text-slate-300">v3.1 • Premium UI</span>
+        <span class="px-2.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-400/15 text-emerald-300 font-black flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.9)]"></span>LIVE SYSTEM</span>
+        <button id="btnTop" aria-label="Back to top" class="w-9 h-9 rounded-full glass hover:bg-white/[0.08] flex items-center justify-center"><i class="fa-solid fa-arrow-up text-slate-300 text-xs"></i></button>
       </div>
     </div>
   </footer>
 
+  <dialog id="shortcutDialog" aria-label="Keyboard shortcuts" class="rounded-2xl bg-stone-900 text-stone-200 border border-orange-500/25 p-0 w-[min(420px,calc(100vw-32px))] shadow-2xl backdrop:bg-black/70">
+    <div class="p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-display font-bold tracking-wide text-white flex items-center gap-2"><i class="fa-solid fa-keyboard text-orange-300"></i> KEYBOARD SHORTCUTS</h3>
+        <button id="btnCloseShortcuts" aria-label="Close shortcuts" class="w-8 h-8 rounded-lg glass flex items-center justify-center hover:bg-white/10"><i class="fa-solid fa-xmark text-xs"></i></button>
+      </div>
+      <ul class="space-y-2.5 text-sm">
+        <li class="flex items-center justify-between gap-3"><span class="text-slate-300">Start / stop camera</span><span><kbd>Space</kbd></span></li>
+        <li class="flex items-center justify-between gap-3"><span class="text-slate-300">Toggle demo fog</span><span><kbd>F</kbd></span></li>
+        <li class="flex items-center justify-between gap-3"><span class="text-slate-300">Theater mode</span><span><kbd>T</kbd></span></li>
+        <li class="flex items-center justify-between gap-3"><span class="text-slate-300">Stop + exit fullscreen</span><span><kbd>Esc</kbd></span></li>
+        <li class="flex items-center justify-between gap-3"><span class="text-slate-300">This dialog</span><span><kbd>?</kbd></span></li>
+      </ul>
+    </div>
+  </dialog>
+
   <!-- Hidden file video element -->
   <video id="fileVideo" loop muted playsinline class="hidden"></video>
+  <!-- Toast stack -->
+  <div id="toastStack" class="fixed bottom-4 right-4 z-[70] flex flex-col gap-2 pointer-events-none max-w-[360px] w-[calc(100vw-32px)]" aria-live="polite"></div>
 
+  <script>
+    // UI-only helpers (no AI logic). Safe alongside app.js module.
+    (function(){
+      var theaterBtn = document.getElementById('btnTheater');
+      function setTheater(on){
+        document.body.classList.toggle('theater', on);
+        if(theaterBtn){ theaterBtn.setAttribute('aria-pressed', on ? 'true' : 'false'); }
+      }
+      if(theaterBtn){ theaterBtn.addEventListener('click', function(){ setTheater(!document.body.classList.contains('theater')); }); }
+      var topBtn = document.getElementById('btnTop');
+      if(topBtn){ topBtn.addEventListener('click', function(){ window.scrollTo({top:0, behavior:'smooth'}); }); }
+      var dlg = document.getElementById('shortcutDialog');
+      var openBtn = document.getElementById('btnShortcuts');
+      var closeBtn = document.getElementById('btnCloseShortcuts');
+      function openDlg(){ if(dlg && dlg.showModal){ dlg.showModal(); } else if(dlg){ dlg.setAttribute('open',''); } }
+      function closeDlg(){ if(dlg && dlg.close){ try{ dlg.close(); }catch(e){ dlg.removeAttribute('open'); } } else if(dlg){ dlg.removeAttribute('open'); } }
+      if(openBtn){ openBtn.addEventListener('click', openDlg); }
+      if(closeBtn){ closeBtn.addEventListener('click', closeDlg); }
+      if(dlg){ dlg.addEventListener('click', function(e){ if(e.target === dlg) closeDlg(); }); }
+      window.addEventListener('keydown', function(e){
+        if(e.key === '?' && !e.ctrlKey && !e.metaKey){ var tag=(document.activeElement&&document.activeElement.tagName)||''; if(tag!=='INPUT'&&tag!=='SELECT'&&tag!=='TEXTAREA'){ e.preventDefault(); if(dlg&&dlg.open){ closeDlg(); } else { openDlg(); } } }
+        if((e.key === 't' || e.key === 'T') && !e.ctrlKey && !e.metaKey){ var t2=(document.activeElement&&document.activeElement.tagName)||''; if(t2!=='INPUT'&&t2!=='SELECT'&&t2!=='TEXTAREA'){ setTheater(!document.body.classList.contains('theater')); } }
+      });
+    })();
+  </script>
   <script type="module" src="app.js"></script>
 </body>
 </html>

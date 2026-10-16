@@ -20,8 +20,9 @@ export class Tracker {
   // distance = (REAL_HEIGHT_m * focal_px) / bbox_height_px
   estimateDistance(cls, bboxH, frameH) {
     const REAL_HEIGHT = {
-      'person':1.7, 'bicycle':1.5, 'car':1.5, 'motorcycle':1.5, 'bus':3.0, 'truck':3.0,
-      'traffic light':3.0, 'stop sign':2.0, 'bench':0.8, 'chair':0.9, 'dog':0.6, 'cat':0.4
+      'person':1.7, 'rider':1.7, 'bicycle':1.5, 'bike':1.5, 'car':1.5,
+      'motorcycle':1.5, 'motor':1.5, 'bus':3.0, 'truck':3.0, 'train':3.5,
+      'traffic light':3.0, 'stop sign':2.0, 'traffic sign':2.0, 'bench':0.8, 'chair':0.9, 'dog':0.6, 'cat':0.4
     };
     const hReal = REAL_HEIGHT[cls] ?? 1.6;
     const focal = 720; // px, tuned for 640x480

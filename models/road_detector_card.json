@@ -1,0 +1,51 @@
+{
+  "model_name": "YOLOv8n Road Detector (BDD100K)",
+  "base_model": "yolov8n",
+  "dataset": "BDD100K Autonomous Driving (D:\\RoadDetector)",
+  "input_size": 640,
+  "classes": [
+    "person",
+    "rider",
+    "car",
+    "bus",
+    "truck",
+    "bike",
+    "motor",
+    "traffic light",
+    "traffic sign",
+    "train"
+  ],
+  "num_classes": 10,
+  "epochs": 5,
+  "batch_size": 16,
+  "train_time_min": 15.97,
+  "onnx_size_mb": 11.68,
+  "dataset_statistics": {
+    "train_images": 500,
+    "val_images": 100,
+    "train_boxes": 9540,
+    "val_boxes": 2117,
+    "train_distribution": {
+      "traffic sign": 1780,
+      "truck": 229,
+      "car": 5153,
+      "traffic light": 1472,
+      "person": 696,
+      "bus": 87,
+      "rider": 36,
+      "bike": 69,
+      "motor": 18
+    },
+    "val_distribution": {
+      "traffic sign": 434,
+      "traffic light": 293,
+      "truck": 29,
+      "car": 1173,
+      "person": 146,
+      "bike": 10,
+      "motor": 10,
+      "bus": 13,
+      "rider": 9
+    }
+  }
+}
