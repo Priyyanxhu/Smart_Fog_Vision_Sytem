@@ -83,7 +83,7 @@ const CLASS_COLORS = {
   'person': '#22c55e', 'rider': '#10b981', 'car': '#0ea5e9', 'truck': '#f59e0b', 'bus': '#ef4444',
   'motorcycle': '#a855f7', 'motor': '#a855f7', 'bicycle': '#06b6d4', 'bike': '#06b6d4',
   'traffic light': '#eab308', 'stop sign': '#dc2626', 'traffic sign': '#f43f5e', 'train': '#8b5cf6',
-  'dog': '#84cc16', 'cat': '#f97316'
+  'dog': '#84cc16', 'cat': '#0ea5e9'
 };
 function colorFor(cls){ return CLASS_COLORS[cls] || '#38bdf8'; }
 
@@ -145,13 +145,13 @@ const el = {
 function setRangeFill(inp){
   const min = parseFloat(inp.min), max = parseFloat(inp.max), val = parseFloat(inp.value);
   const pct = ((val - min) / (max - min)) * 100;
-  inp.style.background = `linear-gradient(90deg, ${inp.classList.contains('accent-amber-500') ? '#f59e0b, #78350f' : '#f97316, #7c2d12'} ${pct}%, rgba(255,255,255,0.08) ${pct}%)`;
+  inp.style.background = `linear-gradient(90deg, ${inp.classList.contains('accent-amber-500') ? '#f59e0b, #78350f' : '#0ea5e9, #0c4a6e'} ${pct}%, rgba(255,255,255,0.08) ${pct}%)`;
 }
 function showToast(msg, level='info'){
   const stack = document.getElementById('toastStack');
   if(!stack) return;
   const icons = { danger:'fa-triangle-exclamation', warn:'fa-triangle-exclamation', info:'fa-circle-info', success:'fa-check' };
-  const bg = level==='danger' ? 'bg-red-500' : level==='warn' ? 'bg-amber-500' : level==='success' ? 'bg-emerald-500' : 'bg-orange-500';
+  const bg = level==='danger' ? 'bg-red-500' : level==='warn' ? 'bg-amber-500' : level==='success' ? 'bg-emerald-500' : 'bg-sky-500';
   const div = document.createElement('div');
   div.className = `pointer-events-auto flex items-start gap-3 px-4 py-3 rounded-2xl text-white text-sm font-bold shadow-[0_16px_40px_rgba(0,0,0,0.45)] border border-white/10 backdrop-blur-xl fade-in ${bg}`;
   div.style.animation='fadeIn 0.35s cubic-bezier(0.16,1,0.3,1)';
@@ -163,7 +163,7 @@ function showToast(msg, level='info'){
 
 function logAlert(msg, level='info'){
   const time = new Date().toLocaleTimeString();
-  const colors = { danger: 'bg-red-500/10 border-red-500/20 text-red-300', warn: 'bg-amber-500/10 border-amber-500/20 text-amber-300', info: 'bg-orange-500/10 border-orange-500/20 text-orange-300' };
+  const colors = { danger: 'bg-red-500/10 border-red-500/20 text-red-300', warn: 'bg-amber-500/10 border-amber-500/20 text-amber-300', info: 'bg-sky-500/10 border-sky-500/20 text-sky-300' };
   const c = level==='danger'? colors.danger : level==='warn'? colors.warn : colors.info;
   const icon = level==='danger'? 'fa-triangle-exclamation' : level==='warn'? 'fa-triangle-exclamation' : 'fa-circle-info';
   // clear placeholder on first real log
@@ -262,15 +262,15 @@ async function initFogClassifier(){
 }
 initFogClassifier();
 
-// Road segmentation (TinyUNet trained on BDD100K — orange road border overlay)
+// Road segmentation (TinyUNet trained on BDD100K — sky-blue road border overlay)
 let segEnabled = true;
 let lastRoadMask = null;
 let segThrottle = 0;
 async function initRoadSeg(){
   try{
     await loadRoadSeg('models/road_seg.onnx');
-    logAlert('Road segmenter loaded (TinyUNet • BDD100K) — orange road border active', 'info');
-    showToast('Road highlight ready — orange border','success');
+    logAlert('Road segmenter loaded (TinyUNet • BDD100K) — sky-blue road border active', 'info');
+    showToast('Road highlight ready — sky-blue border','success');
   }catch(e){
     console.warn('Road seg load failed', e);
     segEnabled = false;
@@ -790,7 +790,7 @@ function updateFogUI(m){
   else { badge.className='px-3.5 py-2 rounded-full bg-emerald-500 text-white text-xs font-black tracking-widest shadow-[0_10px_24px_rgba(16,185,129,0.35)] border border-white/10'; badge.textContent='VISIBILITY: HIGH'; }
 }
 
-// Road overlay — translucent orange fill + bright orange border from seg mask
+// Road overlay — translucent sky-blue fill + bright sky-blue border from seg mask
 const segFillCanvas = document.createElement('canvas');
 const segEdgeCanvas = document.createElement('canvas');
 function drawRoadOverlay(){
@@ -809,15 +809,15 @@ function drawRoadOverlay(){
       const i = y*size+x;
       if(!mask[i]) continue;
       const o = i*4;
-      // translucent orange fill
-      fd[o]=249; fd[o+1]=115; fd[o+2]=22; fd[o+3]=52;
+      // translucent sky-blue fill
+      fd[o]=14; fd[o+1]=165; fd[o+2]=233; fd[o+3]=52;
       // boundary: any 4-neighbour outside road (frame edge counts as boundary)
       const left = x>0 ? mask[i-1] : 0;
       const right = x<size-1 ? mask[i+1] : 0;
       const up = y>0 ? mask[i-size] : 0;
       const down = y<size-1 ? mask[i+size] : 0;
       if(!left || !right || !up || !down){
-        ed[o]=251; ed[o+1]=146; ed[o+2]=60; ed[o+3]=255;
+        ed[o]=56; ed[o+1]=189; ed[o+2]=248; ed[o+3]=255;
       }
     }
   }
