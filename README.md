@@ -12,7 +12,8 @@ AI-powered computer vision website that captures real-time video/images in foggy
 |---|---|
 | **Fog Detection** | Dark Channel Prior (DCP) mean + contrast variance → fog density %, visibility (m), level |
 | **Dehazing / Enhancement** | DCP transmission `t = 1 - ω·dark/A`, guided-filter (box-blur approx) smoothing, scene recovery `J=(I-A)/t +A`, CLAHE-like gain, unsharp mask sharpen |
-| **Object Detection** | **BDD100K Road Detector** (YOLOv8n ONNX fine-tuned on `D:\RoadDetector` for cars, pedestrians, trucks, buses, signs, lights) + COCO-SSD / YOLOv8n CDN fallback |
+| **Object Detection** | **YOLOv8n Low-Light & Road Detector** fine-tuned on `D:\LowLightening` (Dash Cam samples: cars, trucks, vans, buses, persons, riders) + adverse weather driving (ONNX Runtime Web) |
+| **Road Segmentation** | **TinyUNet Road Segmenter** trained on `D:\RoadSegmentation` (97.7% IoU) — weights in `models/`; live overlay removed from the UI |
 | **Distance Estimation** | Pinhole model `dist = (realHeight · focal)/bboxHeight` — calibrated per class (car 1.5m, person 1.7m, bus 3m…) |
 | **Tracking** | IOU tracker (threshold 0.32, maxAge 15) → persistent IDs across frames |
 | **Alerts** | Color-coded hazard levels (DANGER <12m, WARNING <25m, CAUTION <45m) + top banner + log + **Web Speech API** voice warnings (throttled) |
@@ -66,9 +67,9 @@ Smart_Fog_Vision/
 ├── app.js       — main loop: capture → fog metrics → dehaze → detect → track → alert → render
 ├── dehaze.js    — DCP + atmospheric light + transmission + CLAHE + sharpen + fog synthesis
 ├── detector.js  — COCO-SSD + YOLOv8 ONNX (ort) wrapper, NMS, letterbox preprocess
-├── tracker.js   — IOU tracker + distance estimator + hazardLevel()
-├── models/      — trained ONNX and PyTorch weights (road_detector, fog_classifier)
-└── training/    — train_road_detector.py, train_fog_classifier.py, infer scripts
+├── road_seg.js  — TinyUNet road segmentation inference (module retained; UI overlay removed)
+├── models/      — trained ONNX & PyTorch weights (road_detector, road_seg, fog_classifier)
+└── training/    — train_lowlight_detector.py, train_road_seg_custom.py, train_all.py, infer scripts
 ```
 
 All processing is **100% on-device in the browser** (TF.js, ONNX WASM). No server or API key.

@@ -11,6 +11,7 @@ models/yolo_runs/
 models/foggyroad_backup/
 models/pre_frida_backup/
 models/bdd100k_seg_attr_cache.json
+training/yolo_lowlight_dataset/
 
 # OS / editor
 .DS_Store

@@ -1,7 +1,10 @@
 {
-  "model_name": "YOLOv8n Road Detector (BDD100K)",
+  "model_name": "YOLOv8n Low-Light & Road Detector",
   "base_model": "yolov8n",
-  "dataset": "BDD100K Autonomous Driving (D:\\RoadDetector)",
+  "datasets": [
+    "D:\\LowLightening (Low lighting Dash Cam Video Dataset)",
+    "D:\\RoadDetector (BDD100K Adverse Weather Driving)"
+  ],
   "input_size": 640,
   "classes": [
     "person",
@@ -16,36 +19,40 @@
     "train"
   ],
   "num_classes": 10,
-  "epochs": 5,
-  "batch_size": 16,
-  "train_time_min": 15.97,
-  "onnx_size_mb": 11.68,
+  "epochs": 3,
+  "batch_size": 2,
+  "train_time_min": 0.69,
+  "onnx_size_mb": 11.7,
+  "metrics": {
+    "mAP50": 0.23553921991499038,
+    "mAP50_95": 0.12766996681821874,
+    "precision": 0.3062312575713838,
+    "recall": 0.20266626332433427
+  },
   "dataset_statistics": {
-    "train_images": 500,
-    "val_images": 100,
-    "train_boxes": 9540,
-    "val_boxes": 2117,
-    "train_distribution": {
-      "traffic sign": 1780,
-      "truck": 229,
-      "car": 5153,
-      "traffic light": 1472,
-      "person": 696,
-      "bus": 87,
-      "rider": 36,
-      "bike": 69,
-      "motor": 18
+    "train_images": 32,
+    "val_images": 8,
+    "train_boxes": 547,
+    "val_boxes": 146,
+    "train_dist": {
+      "car": 315,
+      "person": 23,
+      "traffic light": 70,
+      "traffic sign": 87,
+      "rider": 35,
+      "bus": 3,
+      "truck": 8,
+      "motor": 1,
+      "bike": 5
     },
-    "val_distribution": {
-      "traffic sign": 434,
-      "traffic light": 293,
-      "truck": 29,
-      "car": 1173,
-      "person": 146,
-      "bike": 10,
-      "motor": 10,
-      "bus": 13,
-      "rider": 9
+    "val_dist": {
+      "car": 71,
+      "rider": 6,
+      "person": 8,
+      "traffic sign": 27,
+      "traffic light": 28,
+      "truck": 5,
+      "bus": 1
     }
   }
 }

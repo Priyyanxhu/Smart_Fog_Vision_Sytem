@@ -2,7 +2,6 @@ import { estimateFogMetrics, dehazeImageData, addFogEffect } from './dehaze.js';
 import { Tracker, hazardLevel } from './tracker.js';
 import { loadCoco, loadYolo, detectCoco, detectYolo } from './detector.js';
 import { loadFogClassifier, predictFog, isFogReady } from './fog_classifier.js';
-import { loadRoadSeg, predictRoadMask, isSegReady } from './road_seg.js';
 
 // DOM
 const video = document.getElementById('video');
@@ -72,7 +71,6 @@ let opts = {
   tracking: true,
   distance: true,
   alerts: true,
-  roadSeg: true,
   model: 'road_yolo'
 };
 
@@ -262,24 +260,6 @@ async function initFogClassifier(){
 }
 initFogClassifier();
 
-// Road segmentation (TinyUNet trained on BDD100K — sky-blue road border overlay)
-let segEnabled = true;
-let lastRoadMask = null;
-let segThrottle = 0;
-async function initRoadSeg(){
-  try{
-    await loadRoadSeg('models/road_seg.onnx');
-    logAlert('Road segmenter loaded (TinyUNet • BDD100K) — sky-blue road border active', 'info');
-    showToast('Road highlight ready — sky-blue border','success');
-  }catch(e){
-    console.warn('Road seg load failed', e);
-    segEnabled = false;
-    const t = document.getElementById('toggleSeg');
-    if(t) t.checked = false;
-  }
-}
-initRoadSeg();
-
 function updateAiFogUI(res){
   if(!res) return;
   const pctFog = (res.pFog*100).toFixed(1);
@@ -402,7 +382,6 @@ if(btnUltraClear){
 document.getElementById('toggleTrack').addEventListener('change', e=> opts.tracking = e.target.checked);
 document.getElementById('toggleDistance').addEventListener('change', e=> opts.distance = e.target.checked);
 document.getElementById('toggleAlerts').addEventListener('change', e=> opts.alerts = e.target.checked);
-document.getElementById('toggleSeg').addEventListener('change', e=>{ opts.roadSeg = e.target.checked; if(!e.target.checked) lastRoadMask = null; });
 document.getElementById('conf').addEventListener('input', e=>{
   opts.conf = parseFloat(e.target.value);
   document.getElementById('confVal').textContent = opts.conf.toFixed(2);
@@ -721,18 +700,6 @@ async function loop(){
     }
   }
 
-  // Road segmentation (throttled — TinyUNet 256px on dehazed frame so border aligns with boxes)
-  if(opts.roadSeg && segEnabled && isSegReady()){
-    segThrottle++;
-    if(segThrottle % 6 === 0){
-      predictRoadMask(canvasEnhanced).then(res=>{
-        lastRoadMask = (res.roadFrac > 0.005) ? res : null;
-      }).catch(e=>{ /* silent */ });
-    }
-  } else if(!opts.roadSeg && lastRoadMask){
-    lastRoadMask = null;
-  }
-
   // Tracking
   if(opts.tracking){
     currentTracks = tracker.update(detections, h);
@@ -790,55 +757,10 @@ function updateFogUI(m){
   else { badge.className='px-3.5 py-2 rounded-full bg-emerald-500 text-white text-xs font-black tracking-widest shadow-[0_10px_24px_rgba(16,185,129,0.35)] border border-white/10'; badge.textContent='VISIBILITY: HIGH'; }
 }
 
-// Road overlay — translucent sky-blue fill + bright sky-blue border from seg mask
-const segFillCanvas = document.createElement('canvas');
-const segEdgeCanvas = document.createElement('canvas');
-function drawRoadOverlay(){
-  if(!opts.roadSeg || !lastRoadMask) return;
-  const { mask, size } = lastRoadMask;
-  const W = overlayEnhanced.width, H = overlayEnhanced.height;
-  if(!W || !H || !mask) return;
-  if(segFillCanvas.width !== size){ segFillCanvas.width = size; segFillCanvas.height = size; segEdgeCanvas.width = size; segEdgeCanvas.height = size; }
-  const fctx = segFillCanvas.getContext('2d');
-  const ectx = segEdgeCanvas.getContext('2d');
-  const fillImg = fctx.createImageData(size, size);
-  const edgeImg = ectx.createImageData(size, size);
-  const fd = fillImg.data, ed = edgeImg.data;
-  for(let y=0; y<size; y++){
-    for(let x=0; x<size; x++){
-      const i = y*size+x;
-      if(!mask[i]) continue;
-      const o = i*4;
-      // translucent sky-blue fill
-      fd[o]=14; fd[o+1]=165; fd[o+2]=233; fd[o+3]=52;
-      // boundary: any 4-neighbour outside road (frame edge counts as boundary)
-      const left = x>0 ? mask[i-1] : 0;
-      const right = x<size-1 ? mask[i+1] : 0;
-      const up = y>0 ? mask[i-size] : 0;
-      const down = y<size-1 ? mask[i+size] : 0;
-      if(!left || !right || !up || !down){
-        ed[o]=56; ed[o+1]=189; ed[o+2]=248; ed[o+3]=255;
-      }
-    }
-  }
-  fctx.putImageData(fillImg, 0, 0);
-  ectx.putImageData(edgeImg, 0, 0);
-  oEnh.save();
-  oEnh.imageSmoothingEnabled = true;
-  oEnh.drawImage(segFillCanvas, 0, 0, W, H);
-  try{ oEnh.filter = 'blur(3px)'; oEnh.globalAlpha = 0.8; }catch{}
-  oEnh.drawImage(segEdgeCanvas, 0, 0, W, H);
-  try{ oEnh.filter = 'none'; oEnh.globalAlpha = 1; }catch{}
-  oEnh.drawImage(segEdgeCanvas, 0, 0, W, H);
-  oEnh.restore();
-}
-
 function drawOverlays(tracks, W, H){
   // clear
   oRaw.clearRect(0,0,overlayRaw.width, overlayRaw.height);
   oEnh.clearRect(0,0,overlayEnhanced.width, overlayEnhanced.height);
-  // road highlight under the boxes
-  drawRoadOverlay();
   // scaling: overlay canvas same size as main canvas (640-ish), no scaling needed
   // But if we use devicePixelRatio, handle
   const scaleX = overlayEnhanced.width / W;

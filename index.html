@@ -30,9 +30,9 @@
   }
 </script>
 <link rel="stylesheet" href="style.css"/>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/ort.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/ort.min.js"></script>
 </head>
 <body class="bg-stone-950 text-stone-100 min-h-screen flex flex-col selection:bg-sky-500/40 overflow-x-hidden">
   <a href="#videoGrid" class="skip-link">Skip to live feeds</a>
@@ -337,17 +337,16 @@
             <div id="aiFogBadge" class="px-3 py-1.5 rounded-full hud text-xs font-black tracking-widest flex items-center gap-1.5 border border-amber-400/20 text-amber-200"><i class="fa-solid fa-brain text-[11px]"></i> AI FOG: <span id="aiFogValue" class="text-white">—</span> <span id="aiFogConf" class="text-amber-600 font-mono">—</span></div>
             <div id="trackingBadge" class="px-3 py-1.5 rounded-full hud text-xs font-black tracking-widest text-slate-200">TRACKING: IDLE</div>
           </div>
-          <div class="absolute bottom-3 left-3 right-3 flex gap-2">
-            <div class="flex-1 hud rounded-2xl px-3.5 py-2.5">
-              <div class="text-[10px] tracking-[0.16em] text-white/60 font-black">DEHAZING STRENGTH</div>
-              <div class="flex items-center gap-2.5 mt-1"><div class="flex-1 h-2 rounded-full bg-white/10 overflow-hidden p-0.5"><div id="dehazeBar" class="h-full rounded-full bg-gradient-to-r from-sky-400 to-stone-900 transition-all" style="width:88%"></div></div><span id="dehazeValue" class="text-xs font-mono font-black text-sky-300">0.88</span></div>
-            </div>
+          <div class="absolute bottom-3 right-3 flex gap-2">
             <div class="hidden md:flex hud rounded-2xl px-3.5 py-2.5 flex-col justify-center min-w-[120px]">
               <div class="text-[10px] tracking-[0.16em] text-white/60 font-black">VOICE ALERT</div>
               <div id="voiceStatus" class="text-xs font-black text-slate-200 mt-0.5 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Ready</div>
             </div>
           </div>
           <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-400/60 to-transparent opacity-70"></div>
+          <!-- Ghost elements for JS refs — not visible -->
+          <div id="dehazeBar" style="display:none;width:88%"></div>
+          <span id="dehazeValue" style="display:none">0.88</span>
         </div>
         <div class="relative px-4 py-2.5 bg-white/[0.02] border-t border-white/[0.06] flex items-center justify-between text-xs gap-2">
           <span class="flex items-center gap-2 font-semibold text-slate-300 min-w-0"><span class="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)] shrink-0"></span> <span class="truncate">DCP + Guided Filter + CLAHE <span id="dehazeMs" class="text-slate-400 font-mono">— ms</span></span></span>
@@ -419,9 +418,7 @@
                   <label class="flex items-center gap-2 text-xs font-black glass px-3 py-2 rounded-full cursor-pointer hover:bg-white/[0.08] transition"><input id="toggleTrack" type="checkbox" checked class="accent-amber-500 w-4 h-4"/> Tracking</label>
                   <label class="flex items-center gap-2 text-xs font-black glass px-3 py-2 rounded-full cursor-pointer hover:bg-white/[0.08] transition"><input id="toggleDistance" type="checkbox" checked class="accent-amber-500 w-4 h-4"/> Distance</label>
                   <label class="flex items-center gap-2 text-xs font-black glass px-3 py-2 rounded-full cursor-pointer hover:bg-white/[0.08] transition"><input id="toggleAlerts" type="checkbox" checked class="accent-emerald-500 w-4 h-4"/> Alerts</label>
-                  <label title="TinyUNet road mask — sky border across the road" class="flex items-center gap-2 text-xs font-black glass px-3 py-2 rounded-full cursor-pointer hover:bg-white/[0.08] transition border-sky-400/30"><input id="toggleSeg" type="checkbox" checked class="accent-sky-500 w-4 h-4"/> Road</label>
                 </div>
-                <div class="text-[11px] text-slate-500 font-semibold flex items-center gap-1.5 px-1"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:#38bdf8;box-shadow:0 0 8px #38bdf8"></span> Road border: TinyUNet mask + sky edge on enhanced feed</div>
                 <div class="flex gap-2">
                   <button id="btnVoice" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-black text-xs flex items-center justify-center gap-2 shadow-[0_8px_20px_rgba(16,185,129,0.35)] border border-white/10 btn-shine"><i class="fa-solid fa-volume-high"></i> VOICE ON</button>
                   <button id="btnMute" class="px-4 py-2.5 rounded-xl glass hover:bg-white/[0.08] font-bold text-xs text-slate-200">Mute</button>
@@ -489,7 +486,7 @@
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       <!-- Right Panel: Objects + Alerts Log -->
       <aside aria-label="Tracked objects and alerts" class="lg:col-span-4 flex flex-col gap-5">
