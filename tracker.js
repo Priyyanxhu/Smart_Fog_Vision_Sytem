@@ -1,5 +1,6 @@
+(function(){
 // tracker.js - simple IOU tracker with IDs, distance estimation
-export class Tracker {
+class Tracker {
   constructor(iouThreshold=0.3, maxAge=12) {
     this.tracks = []; // {id, bbox:[x,y,w,h], class, score, age, hits, dist, lastSeen}
     this.nextId = 1;
@@ -89,9 +90,13 @@ export class Tracker {
   }
 }
 
-export function hazardLevel(dist) {
+function hazardLevel(dist) {
   if (dist < 12) return { level:'DANGER', color:'#ef4444', bg:'rgba(239,68,68,0.25)', text:'white' };
   if (dist < 25) return { level:'WARNING', color:'#f59e0b', bg:'rgba(245,158,11,0.25)', text:'white' };
   if (dist < 45) return { level:'CAUTION', color:'#eab308', bg:'rgba(234,179,8,0.18)', text:'white' };
   return { level:'INFO', color:'#22c55e', bg:'rgba(34,197,94,0.14)', text:'white' };
 }
+
+window.SFVMods = window.SFVMods || {};
+window.SFVMods.tracker = { Tracker, hazardLevel };
+})();

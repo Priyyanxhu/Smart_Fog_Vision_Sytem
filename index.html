@@ -650,6 +650,12 @@
       });
     })();
   </script>
-  <script type="module" src="app.js"></script>
+  <!-- Classic scripts (defer = run after DOM parse, in order). Not ES modules so the app also works when index.html is opened directly via file:// -->
+  <script defer src="dehaze.js"></script>
+  <script defer src="tracker.js"></script>
+  <script defer src="detector.js"></script>
+  <script defer src="fog_classifier.js"></script>
+  <script defer src="road_seg.js"></script>
+  <script defer src="app.js"></script>
 </body>
 </html>

@@ -1,3 +1,4 @@
+(function(){
 // detector.js - wraps COCO-SSD and optional YOLOv8 ONNX
 let cocoModel = null;
 let yoloSession = null;
@@ -9,13 +10,13 @@ const YOLO_CLASSES = ['person','bicycle','car','motorcycle','airplane','bus','tr
 let currentYoloClasses = YOLO_CLASSES;
 let yoloModelUrl = null;
 
-export async function loadCoco() {
+async function loadCoco() {
   if (cocoModel) return cocoModel;
   cocoModel = await cocoSsd.load({ base: 'lite_mobilenet_v2' });
   return cocoModel;
 }
 
-export async function loadYolo(modelUrl='models/road_detector.onnx') {
+async function loadYolo(modelUrl='models/road_detector.onnx') {
   if (yoloSession && yoloModelUrl === modelUrl) return yoloSession;
   try {
     // Configure WASM paths
@@ -61,7 +62,7 @@ export async function loadYolo(modelUrl='models/road_detector.onnx') {
   }
 }
 
-export async function detectCoco(canvas, confTh=0.5) {
+async function detectCoco(canvas, confTh=0.5) {
   if (!cocoModel) await loadCoco();
   const preds = await cocoModel.detect(canvas);
   // filter by conf and map to unified format
@@ -125,7 +126,7 @@ function nms(boxes, iouThr=0.45){
   return keep;
 }
 
-export async function detectYolo(canvas, confTh=0.5){
+async function detectYolo(canvas, confTh=0.5){
   if(!yoloSession) throw new Error('YOLO not loaded');
   const {tensor, scale, dx, dy, size} = preprocessForYolo(canvas, yoloInputSize);
   const feeds={ images: tensor };
@@ -179,7 +180,11 @@ export async function detectYolo(canvas, confTh=0.5){
   }
 }
 
-export function getYoloStatus(){ return !!yoloSession; }
-export function getCurrentYoloClasses(){ return currentYoloClasses; }
-export function resetYoloSession(){ yoloSession = null; yoloModelUrl = null; }
+function getYoloStatus(){ return !!yoloSession; }
+function getCurrentYoloClasses(){ return currentYoloClasses; }
+function resetYoloSession(){ yoloSession = null; yoloModelUrl = null; }
 
+
+window.SFVMods = window.SFVMods || {};
+window.SFVMods.detector = { loadCoco, loadYolo, detectCoco, detectYolo, getYoloStatus, getCurrentYoloClasses, resetYoloSession };
+})();

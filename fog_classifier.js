@@ -1,3 +1,4 @@
+(function(){
 // fog_classifier.js — Browser ONNX fog vs non-fog (MobileNetV2, 224, ImageNet norm)
 let fogSession = null;
 let fogLabels = ["non-fog","fog"];
@@ -5,7 +6,7 @@ const FOG_SIZE = 224;
 const FOG_MEAN = [0.485, 0.456, 0.406];
 const FOG_STD  = [0.229, 0.224, 0.225];
 
-export async function loadFogClassifier(url="models/fog_classifier.onnx") {
+async function loadFogClassifier(url="models/fog_classifier.onnx") {
   if (fogSession) return fogSession;
   try {
     // Ensure WASM files resolve to CDN (avoids 404 on localhost)
@@ -63,7 +64,7 @@ function preprocessCanvas(canvas, size=FOG_SIZE){
   return new ort.Tensor("float32", float, [1,3,size,size]);
 }
 
-export async function predictFog(canvas){
+async function predictFog(canvas){
   if(!fogSession) throw new Error("Fog model not loaded");
   const tensor = preprocessCanvas(canvas);
   const feeds = {};
@@ -90,5 +91,9 @@ export async function predictFog(canvas){
   };
 }
 
-export function getFogLabels(){ return fogLabels; }
-export function isFogReady(){ return !!fogSession; }
+function getFogLabels(){ return fogLabels; }
+function isFogReady(){ return !!fogSession; }
+
+window.SFVMods = window.SFVMods || {};
+window.SFVMods.fogClassifier = { loadFogClassifier, predictFog, getFogLabels, isFogReady };
+})();

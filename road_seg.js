@@ -1,9 +1,10 @@
+(function(){
 // road_seg.js — Browser ONNX road segmentation (TinyUNet, 256, RGB /255, sigmoid>0.5)
 // Model: models/road_seg.onnx (BDD100K, road id 0 -> binary). Runs on-device via ONNX Runtime Web.
 let segSession = null;
 const SEG_SIZE = 256;
 
-export async function loadRoadSeg(url="models/road_seg.onnx") {
+async function loadRoadSeg(url="models/road_seg.onnx") {
   if (segSession) return segSession;
   try {
     // Ensure WASM files resolve to CDN (avoids 404 on localhost)
@@ -44,7 +45,7 @@ function preprocessCanvas(canvas, size=SEG_SIZE){
   return new ort.Tensor("float32", float, [1,3,size,size]);
 }
 
-export async function predictRoadMask(canvas){
+async function predictRoadMask(canvas){
   if(!segSession) throw new Error("Road seg model not loaded");
   const tensor = preprocessCanvas(canvas);
   const feeds = {};
@@ -60,5 +61,9 @@ export async function predictRoadMask(canvas){
   return { mask, size: SEG_SIZE, roadFrac: road / mask.length };
 }
 
-export function isSegReady(){ return !!segSession; }
-export function getSegSize(){ return SEG_SIZE; }
+function isSegReady(){ return !!segSession; }
+function getSegSize(){ return SEG_SIZE; }
+
+window.SFVMods = window.SFVMods || {};
+window.SFVMods.roadSeg = { loadRoadSeg, predictRoadMask, isSegReady, getSegSize };
+})();

@@ -1,7 +1,8 @@
+(function(){
 // dehaze.js - Clear Dark Channel Prior + Neutral White Balance + Exposure Restore + Sharpen
 // Produces bright, neutral, high-visibility output (no dark-blue crush).
 
-export function estimateFogMetrics(imageData) {
+function estimateFogMetrics(imageData) {
   const { data, width, height } = imageData;
   const total = width * height;
   let darkSum = 0;
@@ -79,7 +80,7 @@ function smoothTransmission(trans, w, h) {
   return t;
 }
 
-export function dehazeImageData(srcImageData, opts = {}) {
+function dehazeImageData(srcImageData, opts = {}) {
   // Winter-driving defaults: strong enough for dense fog (Image1) -> clear (Image2),
   // yet safe for clear days. Dense fog auto-boosts below.
   let omega = opts.omega ?? 0.88;
@@ -350,7 +351,7 @@ function sharpenImageData(img, amount) {
 }
 
 // Add synthetic fog for demo (blend with white)
-export function addFogEffect(imageData, intensity = 0.45) {
+function addFogEffect(imageData, intensity = 0.45) {
   const d = imageData.data;
   for (let i = 0; i < d.length; i += 4) {
     d[i]   = d[i] * (1 - intensity) + 255 * intensity * 0.85;
@@ -364,3 +365,7 @@ export function addFogEffect(imageData, intensity = 0.45) {
   }
   return imageData;
 }
+
+window.SFVMods = window.SFVMods || {};
+window.SFVMods.dehaze = { estimateFogMetrics, dehazeImageData, addFogEffect };
+})();

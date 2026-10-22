@@ -1,7 +1,9 @@
-import { estimateFogMetrics, dehazeImageData, addFogEffect } from './dehaze.js';
-import { Tracker, hazardLevel } from './tracker.js';
-import { loadCoco, loadYolo, detectCoco, detectYolo } from './detector.js';
-import { loadFogClassifier, predictFog, isFogReady } from './fog_classifier.js';
+(function(){
+// Classic-script bundle (works over http:// and file:// — ES modules are CORS-blocked on file://)
+const { estimateFogMetrics, dehazeImageData, addFogEffect } = window.SFVMods.dehaze;
+const { Tracker, hazardLevel } = window.SFVMods.tracker;
+const { loadCoco, loadYolo, detectCoco, detectYolo } = window.SFVMods.detector;
+const { loadFogClassifier, predictFog, isFogReady } = window.SFVMods.fogClassifier;
 
 // DOM
 const video = document.getElementById('video');
@@ -488,6 +490,7 @@ function setupCanvases(w,h){
 // Image upload
 inputImage.addEventListener('change', e=>{
   const file=e.target.files[0]; if(!file) return;
+  inputImage.value=''; // allow re-selecting the same file (change won't fire otherwise)
   const img=new Image();
   img.onload=()=>{
     uploadedImage=img;
@@ -505,12 +508,17 @@ inputImage.addEventListener('change', e=>{
     // After 2s, pause loop if not video
     // Keep running to allow interactive dehazing tweaks
   };
+  img.onerror=()=>{
+    showToast('Could not read that image — use JPG, PNG or WebP', 'danger');
+    logAlert(`Image failed to load: ${file.name} (unsupported or corrupt file)`, 'warn');
+  };
   img.src=URL.createObjectURL(file);
 });
 
 // Video upload
 inputVideo.addEventListener('change', e=>{
   const file=e.target.files[0]; if(!file) return;
+  inputVideo.value='';
   const url=URL.createObjectURL(file);
   fileVideo.src=url;
   fileVideo.muted=true;
@@ -525,6 +533,9 @@ inputVideo.addEventListener('change', e=>{
     el.sourceLabel.textContent='Video: '+file.name;
     logAlert(`Video loaded: ${file.name}`, 'info');
     if(!rafId) loop();
+  }).catch(err=>{
+    showToast('Could not play that video — try MP4/WebM', 'danger');
+    logAlert(`Video failed to load: ${file.name} (${err.message})`, 'warn');
   });
 });
 
@@ -912,4 +923,4 @@ ctxEnh.fillStyle='#38bdf8'; ctxEnh.font='bold 16px sans-serif'; ctxEnh.fillText(
 
 // Expose for debug
 window.SFV = { opts, tracker, startCamera, stopCamera };
-
+})();
